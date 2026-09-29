@@ -1,9 +1,21 @@
-import { createContext, useContext, useState, type ReactNode } from 'react';
+import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from 'react';
 import type { Role, User } from '@/types';
-import { users } from '@/data/mockData';
+import {
+  fetchCurrentUser,
+  getCachedUser,
+  initialsOf,
+  login as loginRequest,
+  logout as logoutRequest,
+  register as registerRequest,
+  type AuthUser,
+  type LoginInput,
+  type RegisterInput,
+} from '@/lib/auth';
+import { ApiError, setUnauthorizedHandler } from '@/lib/api';
 
 export type Page =
   | 'login'
+  | 'register'
   // driver
   | 'driver-dashboard'
   | 'driver-search'
@@ -43,13 +55,50 @@ export type Page =
   | 'admin-audit'
   | 'admin-config';
 
+const DASHBOARD_FOR_ROLE: Record<Role, Page> = {
+  driver: 'driver-dashboard',
+  staff: 'staff-dashboard',
+  operator: 'operator-dashboard',
+  admin: 'admin-dashboard',
+};
+
+function toUser(profile: AuthUser): User {
+  return {
+    id: profile.id,
+    name: profile.name,
+    email: profile.email,
+    role: profile.role,
+    avatar: initialsOf(profile.name) || profile.email.slice(0, 2).toUpperCase(),
+    phone: profile.phone ?? undefined,
+  };
+}
+
+export interface AuthResult {
+  ok: boolean;
+  /** Message to show under the form; the reason when `ok` is false. */
+  message: string;
+}
+
+const OK: AuthResult = { ok: true, message: '' };
+
+function failure(error: unknown): AuthResult {
+  if (error instanceof ApiError) {
+    return { ok: false, message: error.message };
+  }
+  return { ok: false, message: 'Something went wrong. Please try again.' };
+}
+
 interface AppState {
   currentUser: User | null;
   currentPage: Page;
   selectedFacilityId: string | null;
   selectedReservationId: string | null;
-  login: (role: Role) => void;
-  logout: () => void;
+  /** False until the stored session has been checked, to avoid a login flash. */
+  initialising: boolean;
+  authPending: boolean;
+  login: (input: LoginInput) => Promise<AuthResult>;
+  register: (input: RegisterInput) => Promise<AuthResult>;
+  logout: () => Promise<void>;
   navigate: (page: Page) => void;
   selectFacility: (id: string) => void;
   selectReservation: (id: string) => void;
@@ -62,40 +111,99 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [currentPage, setCurrentPage] = useState<Page>('login');
   const [selectedFacilityId, setSelectedFacilityId] = useState<string | null>(null);
   const [selectedReservationId, setSelectedReservationId] = useState<string | null>(null);
+  const [initialising, setInitialising] = useState(true);
+  const [authPending, setAuthPending] = useState(false);
 
-  const login = (role: Role) => {
-    const user = users.find((u) => u.role === role);
-    if (user) {
-      setCurrentUser(user);
-      const dash: Record<Role, Page> = {
-        driver: 'driver-dashboard',
-        staff: 'staff-dashboard',
-        operator: 'operator-dashboard',
-        admin: 'admin-dashboard',
-      };
-      setCurrentPage(dash[role]);
-    }
+  useEffect(() => {
+    let cancelled = false;
+
+    (async () => {
+      const cached = getCachedUser();
+      if (cached) {
+        setCurrentUser(toUser(cached));
+        setCurrentPage(DASHBOARD_FOR_ROLE[cached.role]);
+      }
+
+      const fresh = await fetchCurrentUser();
+      if (cancelled) return;
+
+      if (fresh) {
+        setCurrentUser(toUser(fresh));
+        setCurrentPage(DASHBOARD_FOR_ROLE[fresh.role]);
+      } else if (cached) {
+        setCurrentUser(null);
+        setCurrentPage('login');
+      }
+      setInitialising(false);
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  // A 401 from any request drops the user back to the login screen.
+  useEffect(() => {
+    setUnauthorizedHandler(() => {
+      setCurrentUser(null);
+      setCurrentPage('login');
+    });
+    return () => setUnauthorizedHandler(null);
+  }, []);
+
+  const finishAuth = (profile: AuthUser) => {
+    setCurrentUser(toUser(profile));
+    setCurrentPage(DASHBOARD_FOR_ROLE[profile.role]);
+    setSelectedFacilityId(null);
+    setSelectedReservationId(null);
   };
 
-  const logout = () => {
+  const login = useCallback(async (input: LoginInput): Promise<AuthResult> => {
+    setAuthPending(true);
+    try {
+      finishAuth((await loginRequest(input)).user);
+      return OK;
+    } catch (error) {
+      return failure(error);
+    } finally {
+      setAuthPending(false);
+    }
+  }, []);
+
+  const register = useCallback(async (input: RegisterInput): Promise<AuthResult> => {
+    setAuthPending(true);
+    try {
+      finishAuth((await registerRequest(input)).user);
+      return OK;
+    } catch (error) {
+      return failure(error);
+    } finally {
+      setAuthPending(false);
+    }
+  }, []);
+
+  const logout = useCallback(async () => {
+    await logoutRequest();
     setCurrentUser(null);
     setCurrentPage('login');
-  };
+    setSelectedFacilityId(null);
+    setSelectedReservationId(null);
+  }, []);
 
-  const navigate = (page: Page) => {
+  const navigate = useCallback((page: Page) => {
     setCurrentPage(page);
     window.scrollTo(0, 0);
-  };
+  }, []);
 
-  const selectFacility = (id: string) => {
+  const selectFacility = useCallback((id: string) => {
     setSelectedFacilityId(id);
     setCurrentPage('driver-facility');
     window.scrollTo(0, 0);
-  };
+  }, []);
 
-  const selectReservation = (id: string) => {
+  const selectReservation = useCallback((id: string) => {
     setSelectedReservationId(id);
-  };
+  }, []);
 
   return (
     <AppContext.Provider
@@ -104,7 +212,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
         currentPage,
         selectedFacilityId,
         selectedReservationId,
+        initialising,
+        authPending,
         login,
+        register,
         logout,
         navigate,
         selectFacility,

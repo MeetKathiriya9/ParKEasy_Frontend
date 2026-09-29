@@ -143,7 +143,12 @@ export function AppLayout({ children }: { children: ReactNode }) {
           ))}
         </nav>
         <div className="p-3 border-t border-[#1e2d4d]">
-          <button onClick={logout} className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium text-[#ef4444] hover:bg-[#ef4444]/10 transition-colors">
+          <button
+            onClick={() => {
+              void logout();
+            }}
+            className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium text-[#ef4444] hover:bg-[#ef4444]/10 transition-colors"
+          >
             <LogOut size={18} />
             Sign Out
           </button>

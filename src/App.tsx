@@ -1,6 +1,7 @@
 import { AppProvider, useApp } from '@/context/AppContext';
 import { AppLayout } from '@/components/AppLayout';
 import { LoginPage } from '@/pages/LoginPage';
+import { RegisterPage } from '@/pages/RegisterPage';
 import { DriverDashboard } from '@/pages/driver/DriverDashboard';
 import { DriverSearch } from '@/pages/driver/DriverSearch';
 import { DriverFacility } from '@/pages/driver/DriverFacility';
@@ -26,9 +27,26 @@ import {
 } from '@/pages/admin/AdminPages';
 
 function Router() {
-  const { currentPage, currentUser } = useApp();
+  const { currentUser, currentPage, initialising } = useApp();
 
-  if (!currentUser || currentPage === 'login') {
+  // Wait for the stored-session check before deciding what to render, otherwise
+  // a reload flashes the login page for an already-authenticated user.
+  if (initialising) {
+    return (
+      <div className="min-h-screen bg-[#0b1220] flex items-center justify-center">
+        <div className="w-8 h-8 rounded-full border-2 border-[#1e2d4d] border-t-[#2563eb] animate-spin" />
+      </div>
+    );
+  }
+
+  // Signed out: the only two pages available are login and register. This has
+  // to branch on `currentPage` before the login fallback, otherwise requesting
+  // 'register' while logged out is immediately swallowed by `!currentUser`.
+  if (!currentUser) {
+    return currentPage === 'register' ? <RegisterPage /> : <LoginPage />;
+  }
+
+  if (currentPage === 'login' || currentPage === 'register') {
     return <LoginPage />;
   }
 
