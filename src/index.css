@@ -1,0 +1,106 @@
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --pe-bg: #0b1220;
+    --pe-surface: #111a2e;
+    --pe-card: #16223d;
+    --pe-border: #1e2d4d;
+    --pe-text: #e8edf5;
+    --pe-muted: #8a98b5;
+    --pe-primary: #2563eb;
+    --pe-primary-light: #3b82f6;
+    --pe-accent: #06b6d4;
+    --pe-success: #10b981;
+    --pe-warning: #f59e0b;
+    --pe-error: #ef4444;
+  }
+
+  * {
+    box-sizing: border-box;
+  }
+
+  html, body, #root {
+    height: 100%;
+    margin: 0;
+  }
+
+  body {
+    font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+    background: var(--pe-bg);
+    color: var(--pe-text);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  ::-webkit-scrollbar { width: 8px; height: 8px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: #2a3a5c; border-radius: 4px; }
+  ::-webkit-scrollbar-thumb:hover { background: #3a4a6c; }
+}
+
+@layer components {
+  .pe-card {
+    @apply bg-[#16223d] border border-[#1e2d4d] rounded-xl;
+  }
+  .pe-input {
+    @apply bg-[#0b1220] border border-[#1e2d4d] rounded-lg px-3 py-2 text-sm text-[#e8edf5] placeholder-[#5a6a8a] focus:outline-none focus:border-[#2563eb] focus:ring-1 focus:ring-[#2563eb] transition-colors w-full;
+  }
+  .pe-btn {
+    @apply inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all duration-150 disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+  .pe-btn-primary {
+    @apply pe-btn bg-[#2563eb] text-white hover:bg-[#1d4ed8] active:scale-[0.98];
+  }
+  .pe-btn-ghost {
+    @apply pe-btn bg-transparent text-[#8a98b5] hover:bg-[#1e2d4d] hover:text-[#e8edf5];
+  }
+  .pe-btn-outline {
+    @apply pe-btn bg-transparent border border-[#1e2d4d] text-[#e8edf5] hover:bg-[#1e2d4d];
+  }
+  .pe-badge {
+    @apply inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-semibold;
+  }
+  .pe-chip {
+    @apply inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium cursor-pointer transition-colors border;
+  }
+  .pe-chip-active {
+    @apply pe-chip bg-[#2563eb] border-[#2563eb] text-white;
+  }
+  .pe-chip-idle {
+    @apply pe-chip bg-transparent border-[#1e2d4d] text-[#8a98b5] hover:border-[#3a4a6c] hover:text-[#e8edf5];
+  }
+}
+
+@keyframes pe-fade-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.pe-fade-in { animation: pe-fade-in 0.25s ease-out; }
+
+@keyframes pe-pulse-ring {
+  0% { box-shadow: 0 0 0 0 rgba(37, 99, 235, 0.4); }
+  70% { box-shadow: 0 0 0 8px rgba(37, 99, 235, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(37, 99, 235, 0); }
+}
+.pe-pulse { animation: pe-pulse-ring 2s infinite; }
+
+@keyframes pe-spin {
+  to { transform: rotate(360deg); }
+}
+.pe-spin { animation: pe-spin 1s linear infinite; }
+
+@keyframes pe-scan {
+  0% { top: 0; }
+  100% { top: 100%; }
+}
+.pe-scan-line {
+  position: absolute;
+  left: 0; right: 0; height: 2px;
+  background: linear-gradient(90deg, transparent, #06b6d4, transparent);
+  animation: pe-scan 2s ease-in-out infinite alternate;
+}
