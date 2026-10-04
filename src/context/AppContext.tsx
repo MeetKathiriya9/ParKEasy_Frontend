@@ -16,6 +16,11 @@ import { ApiError, setUnauthorizedHandler } from '@/lib/api';
 export type Page =
   | 'login'
   | 'register'
+  // public, session-less
+  | 'forgot-password'
+  | 'reset-password'
+  // authenticated
+  | 'change-password'
   // driver
   | 'driver-dashboard'
   | 'driver-search'
@@ -99,7 +104,11 @@ interface AppState {
   login: (input: LoginInput) => Promise<AuthResult>;
   register: (input: RegisterInput) => Promise<AuthResult>;
   logout: () => Promise<void>;
+  /** Drops the in-memory session without calling the server. */
+  clearLocalSession: () => void;
   navigate: (page: Page) => void;
+  /** Returns to the page visited before the current one. */
+  goBack: () => void;
   selectFacility: (id: string) => void;
   selectReservation: (id: string) => void;
 }
@@ -109,6 +118,9 @@ const AppContext = createContext<AppState | null>(null);
 export function AppProvider({ children }: { children: ReactNode }) {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [currentPage, setCurrentPage] = useState<Page>('login');
+  // Single-level history, enough for the "Back" button on the password screens.
+  // Not a stack: a full router is overkill until this app has real URLs.
+  const [previousPage, setPreviousPage] = useState<Page | null>(null);
   const [selectedFacilityId, setSelectedFacilityId] = useState<string | null>(null);
   const [selectedReservationId, setSelectedReservationId] = useState<string | null>(null);
   const [initialising, setInitialising] = useState(true);
@@ -186,14 +198,37 @@ export function AppProvider({ children }: { children: ReactNode }) {
     await logoutRequest();
     setCurrentUser(null);
     setCurrentPage('login');
+    setPreviousPage(null);
     setSelectedFacilityId(null);
     setSelectedReservationId(null);
   }, []);
 
-  const navigate = useCallback((page: Page) => {
-    setCurrentPage(page);
-    window.scrollTo(0, 0);
+  // The server invalidates every token on a password change, so the token in
+  // localStorage is already dead by the time the client hears about it. There
+  // is nothing left to revoke, so this only resets local state.
+  const clearLocalSession = useCallback(() => {
+    setCurrentUser(null);
+    setCurrentPage('login');
+    setPreviousPage(null);
+    setSelectedFacilityId(null);
+    setSelectedReservationId(null);
   }, []);
+
+  const navigate = useCallback(
+    (page: Page) => {
+      setPreviousPage(currentPage);
+      setCurrentPage(page);
+      window.scrollTo(0, 0);
+    },
+    [currentPage],
+  );
+
+  const goBack = useCallback(() => {
+    const fallback: Page = currentUser ? DASHBOARD_FOR_ROLE[currentUser.role] : 'login';
+    setCurrentPage(previousPage && previousPage !== currentPage ? previousPage : fallback);
+    setPreviousPage(null);
+    window.scrollTo(0, 0);
+  }, [currentPage, previousPage, currentUser]);
 
   const selectFacility = useCallback((id: string) => {
     setSelectedFacilityId(id);
@@ -217,7 +252,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
         login,
         register,
         logout,
+        clearLocalSession,
         navigate,
+        goBack,
         selectFacility,
         selectReservation,
       }}

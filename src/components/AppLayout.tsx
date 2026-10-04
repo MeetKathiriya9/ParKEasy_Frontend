@@ -5,7 +5,7 @@ import {
   LayoutDashboard, Search, CalendarCheck, Clock, History, Car, Bell,
   Star, MessageSquare, QrCode, ScanLine, AlertTriangle, ParkingSquare,
   Building2, DollarSign, Users, BarChart3, CalendarDays, Settings,
-  FileText, Shield, LogOut, Menu, X, Zap,
+  FileText, Shield, LogOut, Menu, X, Zap, KeyRound, ChevronDown,
 } from 'lucide-react';
 
 interface NavItem {
@@ -167,8 +167,9 @@ export function AppLayout({ children }: { children: ReactNode }) {
 }
 
 function TopBar() {
-  const { currentUser, currentPage, navigate } = useApp();
+  const { currentUser, currentPage, navigate, logout } = useApp();
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
+  const [accountMenuOpen, setAccountMenuOpen] = useState(false);
   const role = currentUser?.role ?? 'driver';
   const config = navConfig[role];
 
@@ -186,22 +187,81 @@ function TopBar() {
             <span className="font-bold text-sm">ParkEasy</span>
           </div>
         </div>
-        <div className="flex items-center gap-3">
-          <button onClick={() => navigate(role === 'driver' ? 'driver-notifications' : role === 'staff' ? 'staff-dashboard' : role === 'operator' ? 'operator-dashboard' : 'admin-dashboard')} className="relative w-9 h-9 rounded-lg bg-[#1e2d4d] flex items-center justify-center text-[#8a98b5] hover:text-[#e8edf5] transition-colors">
-            <Bell size={18} />
-            <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-[#ef4444]" />
-          </button>
-          <div className="flex items-center gap-2">
-            <div className="w-9 h-9 rounded-full bg-gradient-to-br from-[#2563eb] to-[#06b6d4] flex items-center justify-center font-bold text-white text-sm">
-              {currentUser?.avatar}
-            </div>
-            <div className="hidden sm:block">
-              <p className="text-sm font-semibold leading-tight">{currentUser?.name}</p>
-              <p className="text-[10px] text-[#5a6a8a] capitalize">{currentUser?.role}</p>
+<div className="flex items-center gap-3">
+            <button onClick={() => navigate(role === 'driver' ? 'driver-notifications' : role === 'staff' ? 'staff-dashboard' : role === 'operator' ? 'operator-dashboard' : 'admin-dashboard')} className="relative w-9 h-9 rounded-lg bg-[#1e2d4d] flex items-center justify-center text-[#8a98b5] hover:text-[#e8edf5] transition-colors">
+              <Bell size={18} />
+              <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-[#ef4444]" />
+            </button>
+
+            {/* Account menu. Anchored with a wrapper so the absolute panel is
+                positioned against this element rather than the whole header. */}
+            <div className="relative">
+              <button
+                onClick={() => setAccountMenuOpen((open) => !open)}
+                aria-expanded={accountMenuOpen}
+                aria-haspopup="menu"
+                className="flex items-center gap-2 rounded-lg px-1.5 py-1 hover:bg-[#1e2d4d] transition-colors"
+              >
+                <div className="w-9 h-9 rounded-full bg-gradient-to-br from-[#2563eb] to-[#06b6d4] flex items-center justify-center font-bold text-white text-sm">
+                  {currentUser?.avatar}
+                </div>
+                <div className="hidden sm:block text-left">
+                  <p className="text-sm font-semibold leading-tight">{currentUser?.name}</p>
+                  <p className="text-[10px] text-[#5a6a8a] capitalize">{currentUser?.role}</p>
+                </div>
+                <ChevronDown
+                  size={14}
+                  className={`text-[#5a6a8a] hidden sm:block transition-transform ${
+                    accountMenuOpen ? 'rotate-180' : ''
+                  }`}
+                />
+              </button>
+
+              {accountMenuOpen && (
+                <>
+                  {/* Click-away layer. Separate from the panel so the click
+                      that opens the menu does not immediately close it. */}
+                  <div
+                    className="fixed inset-0 z-40"
+                    onClick={() => setAccountMenuOpen(false)}
+                    aria-hidden="true"
+                  />
+                  <div
+                    role="menu"
+                    className="absolute right-0 mt-2 w-56 rounded-xl border border-[#1e2d4d] bg-[#111a2e] shadow-xl shadow-black/40 py-1.5 z-50"
+                  >
+                    <div className="px-3 py-2 border-b border-[#1e2d4d] mb-1">
+                      <p className="text-sm font-semibold truncate">{currentUser?.name}</p>
+                      <p className="text-[11px] text-[#8a98b5] truncate">{currentUser?.email}</p>
+                    </div>
+                    <button
+                      role="menuitem"
+                      onClick={() => {
+                        setAccountMenuOpen(false);
+                        navigate('change-password');
+                      }}
+                      className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-[#8a98b5] hover:bg-[#1e2d4d] hover:text-[#e8edf5] transition-colors"
+                    >
+                      <KeyRound size={15} />
+                      Change password
+                    </button>
+                    <button
+                      role="menuitem"
+                      onClick={() => {
+                        setAccountMenuOpen(false);
+                        void logout();
+                      }}
+                      className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-[#8a98b5] hover:bg-[#1e2d4d] hover:text-[#f87171] transition-colors"
+                    >
+                      <LogOut size={15} />
+                      Sign out
+                    </button>
+                  </div>
+                </>
+              )}
             </div>
           </div>
-        </div>
-      </header>
+        </header>
 
       {mobileNavOpen && (
         <div className="md:hidden absolute inset-0 z-40 bg-[#0b1220]/80 backdrop-blur-sm" onClick={() => setMobileNavOpen(false)}>

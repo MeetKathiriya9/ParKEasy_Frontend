@@ -20,18 +20,53 @@ import { clearToken, getToken } from './token';
  */
 const BASE_URL = import.meta.env.VITE_API_URL ?? '';
 
-/** Machine-readable codes defined in `app/core/errors.py`. */
+/**
+ * Machine-readable codes defined in `app/core/errors.py`, plus the auth-domain
+ * codes defined in `app/services/auth.py`.
+ */
 export type ApiErrorCode =
   | 'INTERNAL_ERROR'
   | 'VALIDATION_ERROR'
+  | 'BAD_REQUEST'
   | 'NOT_FOUND'
   | 'UNAUTHORIZED'
   | 'FORBIDDEN'
   | 'CONFLICT'
   | 'NOT_IMPLEMENTED'
   | 'DUPLICATE_KEY'
+  | 'RATE_LIMITED'
+  | 'DATABASE_UNAVAILABLE'
   | 'DATABASE_ERROR'
+  | 'INVALID_CREDENTIALS'
+  | 'INVALID_TOKEN'
+  | 'TOKEN_REVOKED'
+  | 'PASSWORD_CHANGED'
+  | 'INVALID_RESET_TOKEN'
+  | 'CURRENT_PASSWORD_INCORRECT'
+  | 'ACCOUNT_SUSPENDED'
+  | 'ACCOUNT_PENDING'
+  | 'EMAIL_ALREADY_REGISTERED'
+  | 'ROLE_NOT_SELF_REGISTERABLE'
   | 'APP_ERROR';
+
+/**
+ * Codes that genuinely mean "this access token is finished". Only these may
+ * clear the session.
+ *
+ * Everything else that happens to be a 401 is about the *request*, not the
+ * session, and must leave the user signed in. `INVALID_CREDENTIALS` is the
+ * important one to exclude: a failed login is a 401, and treating it as session
+ * death would discard the credentials of a user who was never signed in.
+ *
+ * Kept in step with the 401s raised by `app/api/deps.py`, `app/core/security.py`
+ * and `app/services/auth.py`.
+ */
+const SESSION_DEAD_CODES: ReadonlySet<string> = new Set<ApiErrorCode>([
+  'UNAUTHORIZED', // no usable Authorization header / unknown role
+  'INVALID_TOKEN', // garbage, malformed or expired token
+  'TOKEN_REVOKED', // explicitly signed out
+  'PASSWORD_CHANGED', // invalidated by a password reset or change
+]);
 
 /** Normalised failure thrown by every request, so callers never read Axios internals. */
 export class ApiError extends Error {
@@ -83,9 +118,13 @@ http.interceptors.response.use(
     const payload = error.response?.data as
       | { error?: { code?: string; message?: string; details?: unknown } }
       | undefined;
+    const code = (payload?.error?.code as ApiErrorCode) ?? 'INTERNAL_ERROR';
 
     // A rejected token cannot be retried: drop it and let the shell re-auth.
-    if (status === 401) {
+    // Gated on the error *code*, not the status - a 401 that means "wrong
+    // current password" or "bad login" says nothing about the session, and
+    // clearing on those signs the user out for a typo.
+    if (status === 401 && SESSION_DEAD_CODES.has(code)) {
       clearToken();
       onUnauthorized?.();
     }
@@ -98,9 +137,7 @@ http.interceptors.response.use(
           ? 'Cannot reach the ParkEasy server'
           : error.message);
 
-    return Promise.reject(
-      new ApiError(status, (payload?.error?.code as ApiErrorCode) ?? 'INTERNAL_ERROR', message, payload?.error?.details),
-    );
+    return Promise.reject(new ApiError(status, code, message, payload?.error?.details));
   },
 );
 

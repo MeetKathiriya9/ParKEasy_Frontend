@@ -77,6 +77,15 @@ export function LoginPage() {
                   required
                 />
               </div>
+              <div className="text-right mt-1.5">
+                <button
+                  type="button"
+                  onClick={() => navigate('forgot-password')}
+                  className="text-xs text-[#3b82f6] hover:underline"
+                >
+                  Forgot password?
+                </button>
+              </div>
             </div>
 
             {error && (

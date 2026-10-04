@@ -2,6 +2,9 @@ import { AppProvider, useApp } from '@/context/AppContext';
 import { AppLayout } from '@/components/AppLayout';
 import { LoginPage } from '@/pages/LoginPage';
 import { RegisterPage } from '@/pages/RegisterPage';
+import { ForgotPasswordPage } from '@/pages/ForgotPasswordPage';
+import { ResetPasswordPage } from '@/pages/ResetPasswordPage';
+import { ChangePasswordPage } from '@/pages/ChangePasswordPage';
 import { DriverDashboard } from '@/pages/driver/DriverDashboard';
 import { DriverSearch } from '@/pages/driver/DriverSearch';
 import { DriverFacility } from '@/pages/driver/DriverFacility';
@@ -25,9 +28,17 @@ import {
   AdminDashboard, AdminUsers, AdminFacilities, AdminPayments,
   AdminComplaints, AdminAudit, AdminConfig,
 } from '@/pages/admin/AdminPages';
+import { useState } from 'react';
 
 function Router() {
   const { currentUser, currentPage, initialising } = useApp();
+
+  // An emailed reset link is a real URL, so it has to win over whatever page
+  // the app happens to be showing. Read once on mount; ResetPasswordPage
+  // scrubs the query string once the token is spent.
+  const [openedFromResetLink] = useState(
+    () => new URLSearchParams(window.location.search).get('token') !== null,
+  );
 
   // Wait for the stored-session check before deciding what to render, otherwise
   // a reload flashes the login page for an already-authenticated user.
@@ -39,10 +50,18 @@ function Router() {
     );
   }
 
-  // Signed out: the only two pages available are login and register. This has
-  // to branch on `currentPage` before the login fallback, otherwise requesting
-  // 'register' while logged out is immediately swallowed by `!currentUser`.
+  // Checked before the auth branch: resetting a password must work whether or
+  // not the person happens to still have a session.
+  if (openedFromResetLink) {
+    return <ResetPasswordPage />;
+  }
+
+  // Signed out: the only pages available are login, register and forgot-password.
+  // This has to branch on `currentPage` before the login fallback, otherwise
+  // requesting 'register' while logged out is immediately swallowed by
+  // `!currentUser`.
   if (!currentUser) {
+    if (currentPage === 'forgot-password') return <ForgotPasswordPage />;
     return currentPage === 'register' ? <RegisterPage /> : <LoginPage />;
   }
 
@@ -50,7 +69,12 @@ function Router() {
     return <LoginPage />;
   }
 
+  if (currentPage === 'forgot-password') {
+    return <ForgotPasswordPage />;
+  }
+
   const pageMap: Record<string, React.ReactNode> = {
+    'change-password': <ChangePasswordPage />,
     'driver-dashboard': <DriverDashboard />,
     'driver-search': <DriverSearch />,
     'driver-facility': <DriverFacility />,

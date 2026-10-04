@@ -38,6 +38,16 @@ export interface LoginInput {
   password: string;
 }
 
+export interface ForgotPasswordResult {
+  message: string;
+  /**
+   * Only ever populated when the server is not in production and the email was
+   * not really delivered. Null in production - if it is ever set there, the
+   * server is misconfigured and anybody could reset any account.
+   */
+  devResetLink: string | null;
+}
+
 export const ROLES: Role[] = ['driver', 'staff', 'operator', 'admin'];
 
 export const ROLE_LABELS: Record<Role, string> = {
@@ -118,6 +128,55 @@ export async function logout(): Promise<void> {
 /** The cached profile from `localStorage`, used to render the shell on reload. */
 export function getCachedUser(): AuthUser | null {
   return getStoredUser<AuthUser>();
+}
+
+/**
+ * `POST /auth/forgot-password` - asks the server to email a reset link.
+ *
+ * The response body is the same whether or not the address is registered, so
+ * the UI must show the same neutral confirmation either way. Resolving to a
+ * result rather than throwing is deliberate: a failed request here must not
+ * read as "no such account" to the person in front of the screen.
+ */
+export async function forgotPassword(email: string): Promise<ForgotPasswordResult> {
+  return post<ForgotPasswordResult>(endpoints.auth.forgotPassword, {
+    email: email.trim().toLowerCase(),
+  });
+}
+
+/**
+ * `POST /auth/reset-password` - redeems an emailed link and sets a new password.
+ *
+ * Clears the stored session on success only, because the server invalidates
+ * every token issued before the change. On failure the session is left alone:
+ * clearing it in a `finally` would sign the user out for a bad token, which is
+ * both wrong and confusing.
+ */
+export async function resetPassword(token: string, newPassword: string): Promise<void> {
+  await post<{ message: string }>(endpoints.auth.resetPassword, {
+    token: token.trim(),
+    newPassword,
+  });
+  clearSession();
+}
+
+/**
+ * `POST /auth/change-password` - rotates the password of the signed-in user.
+ *
+ * Clears the session on success only. The server stamps `passwordChangedAt`,
+ * which invalidates the access token used to make this very request, so the
+ * caller must sign in again - but a rejected attempt (wrong current password,
+ * rate limit, network blip) must leave the user signed in and able to retry.
+ */
+export async function changePassword(
+  currentPassword: string,
+  newPassword: string,
+): Promise<void> {
+  await post<{ message: string }>(endpoints.auth.changePassword, {
+    currentPassword,
+    newPassword,
+  });
+  clearSession();
 }
 
 /** Two-letter initials used by the avatar circles in the existing UI. */

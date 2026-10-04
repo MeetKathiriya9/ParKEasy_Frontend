@@ -22,6 +22,7 @@ export const endpoints = {
     me: `${API_PREFIX}/auth/me`,
     forgotPassword: `${API_PREFIX}/auth/forgot-password`,
     resetPassword: `${API_PREFIX}/auth/reset-password`,
+    changePassword: `${API_PREFIX}/auth/change-password`,
   },
 
   // --- Users & vehicles ---
