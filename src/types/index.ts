@@ -12,16 +12,37 @@ export interface User {
   photoUrl?: string | null;
 }
 
+/** DOC section 18 vehicle body styles. Stored lowercase on the wire. */
+export type VehicleType = 'sedan' | 'suv' | 'hatchback' | 'motorcycle' | 'truck' | 'van' | 'other';
+
+/** DOC section 18 fuel/energy. `isEV` on the server is derived from this. */
+export type FuelType = 'petrol' | 'diesel' | 'electric' | 'hybrid' | 'cng' | 'other';
+
 export interface Vehicle {
   id: string;
   userId: string;
-  plate: string;
-  make: string;
+  /** Uppercase letters and digits only: separators are stripped server-side. */
+  registrationNumber: string;
+  type: VehicleType;
+  /** Free text carrying make and model, e.g. "Honda Civic". */
   model: string;
-  color: string;
+  fuelType: FuelType;
+  /** Derived from `fuelType` by the server; never sent by a client. */
   isEV: boolean;
   isDefault: boolean;
+  createdAt?: string | null;
 }
+
+/** Body of `POST /vehicles`. There is no `isEV` or `isDefault` field. */
+export interface VehicleCreateInput {
+  registrationNumber: string;
+  type: VehicleType;
+  model: string;
+  fuelType: FuelType;
+}
+
+/** Body of `PATCH /vehicles/{id}`: send only what changed. */
+export type VehicleUpdateInput = Partial<VehicleCreateInput>;
 
 export type SpaceStatus = 'available' | 'occupied' | 'reserved' | 'maintenance';
 export type SpaceType = 'standard' | 'compact' | 'large' | 'ev' | 'accessible';

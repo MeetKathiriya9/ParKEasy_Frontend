@@ -1,18 +1,45 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useApp } from '@/context/AppContext';
-import { SectionHeader, Badge, ProgressBar, Modal } from '@/components/ui';
-import { facilities, spaces, reviews, evChargers, vehicles } from '@/data/mockData';
-import { MapPin, Star, Clock, Zap, Shield, Accessibility, CheckCircle2, Navigation, Car, ArrowLeft, Calendar, QrCode, CreditCard, TrendingUp } from 'lucide-react';
+import { Badge, ProgressBar, Modal } from '@/components/ui';
+import { facilities, spaces, reviews, evChargers } from '@/data/mockData';
+import { fetchVehicles } from '@/lib/vehicles';
+import type { Vehicle } from '@/types';
+import { MapPin, Star, Clock, Zap, Accessibility, CheckCircle2, Navigation, ArrowLeft, Calendar, QrCode, CreditCard, TrendingUp, Plus, RefreshCw } from 'lucide-react';
 
 export function DriverFacility() {
-  const { selectedFacilityId, navigate, currentUser, selectReservation } = useApp();
+  const { selectedFacilityId, navigate, selectReservation } = useApp();
   const facility = facilities.find((f) => f.id === selectedFacilityId);
   const [showReserve, setShowReserve] = useState(false);
   const [date, setDate] = useState('2026-09-29');
   const [startTime, setStartTime] = useState('10:00');
   const [duration, setDuration] = useState(4);
-  const [selectedVehicle, setSelectedVehicle] = useState(vehicles[0]?.id || '');
+  const [selectedVehicle, setSelectedVehicle] = useState('');
   const [confirmed, setConfirmed] = useState(false);
+  const [userVehicles, setUserVehicles] = useState<Vehicle[]>([]);
+  const [vehiclesLoading, setVehiclesLoading] = useState(true);
+  const [vehiclesFailed, setVehiclesFailed] = useState(false);
+
+  const loadVehicles = async () => {
+    setVehiclesLoading(true);
+    setVehiclesFailed(false);
+    try {
+      const list = await fetchVehicles();
+      setUserVehicles(list);
+      // Preselect the default vehicle, falling back to the first one.
+      setSelectedVehicle((current) =>
+        current || list.find((v) => v.isDefault)?.id || list[0]?.id || '',
+      );
+    } catch {
+      setVehiclesFailed(true);
+    } finally {
+      setVehiclesLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    // Runs once: loadVehicles only writes to state.
+    void loadVehicles();
+  }, []);
 
   if (!facility) {
     return <div className="text-center py-16 text-[#8a98b5]">Facility not found.</div>;
@@ -21,7 +48,6 @@ export function DriverFacility() {
   const facilitySpaces = spaces.filter((s) => s.facilityId === facility.id);
   const facilityReviews = reviews.filter((r) => r.facilityId === facility.id);
   const facilityEVs = evChargers.filter((e) => e.facilityId === facility.id);
-  const userVehicles = vehicles.filter((v) => v.userId === currentUser?.id);
 
   const totalCost = Math.min(duration * facility.hourlyRate, facility.dailyMax);
 
@@ -268,11 +294,31 @@ export function DriverFacility() {
           <div className="space-y-4">
             <div>
               <label className="text-xs text-[#8a98b5] font-medium mb-1.5 block">Select Vehicle</label>
-              <select value={selectedVehicle} onChange={(e) => setSelectedVehicle(e.target.value)} className="pe-input">
-                {userVehicles.map((v) => (
-                  <option key={v.id} value={v.id}>{v.plate} - {v.make} {v.model}</option>
-                ))}
-              </select>
+              {vehiclesLoading ? (
+                <p className="text-sm text-[#8a98b5]">Loading your vehicles…</p>
+              ) : vehiclesFailed ? (
+                <button type="button" onClick={() => void loadVehicles()} className="pe-btn-outline text-sm">
+                  <RefreshCw size={14} /> Could not load vehicles - try again
+                </button>
+              ) : userVehicles.length === 0 ? (
+                <div className="rounded-lg border border-[#1e2d4d] bg-[#0b1220] p-3">
+                  <p className="text-sm text-[#8a98b5] mb-2">
+                    You need a registered vehicle to reserve a space.
+                  </p>
+                  <button type="button" onClick={() => navigate('driver-vehicles')} className="pe-btn-outline text-sm">
+                    <Plus size={14} /> Add a vehicle
+                  </button>
+                </div>
+              ) : (
+                <select value={selectedVehicle} onChange={(e) => setSelectedVehicle(e.target.value)} className="pe-input">
+                  {userVehicles.map((v) => (
+                    <option key={v.id} value={v.id}>
+                      {v.registrationNumber} - {v.model}
+                      {v.isDefault ? ' (default)' : ''}
+                    </option>
+                  ))}
+                </select>
+              )}
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
@@ -304,7 +350,11 @@ export function DriverFacility() {
                 <span className="font-bold text-lg">${totalCost.toFixed(2)}</span>
               </div>
             </div>
-            <button onClick={handleReserve} className="pe-btn-primary w-full">
+            <button
+              onClick={handleReserve}
+              disabled={selectedVehicle === ''}
+              className="pe-btn-primary w-full disabled:opacity-60"
+            >
               <CreditCard size={16} /> Pay & Reserve
             </button>
           </div>

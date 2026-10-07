@@ -1,6 +1,9 @@
+import { useEffect, useState } from 'react';
 import { useApp } from '@/context/AppContext';
 import { StatCard, SectionHeader, Badge, ProgressBar } from '@/components/ui';
-import { facilities, reservations, activeSession, notifications, vehicles } from '@/data/mockData';
+import { facilities, reservations, activeSession, notifications } from '@/data/mockData';
+import { fetchVehicles } from '@/lib/vehicles';
+import type { Vehicle } from '@/types';
 import { Clock, MapPin, Car, CalendarCheck, Zap, TrendingUp, Navigation, Star } from 'lucide-react';
 
 export function DriverDashboard() {
@@ -9,7 +12,24 @@ export function DriverDashboard() {
   const activeRes = userReservations.find((r) => r.status === 'active');
   const upcomingRes = userReservations.filter((r) => r.status === 'confirmed');
   const unreadNotifs = notifications.filter((n) => !n.read).length;
-  const userVehicles = vehicles.filter((v) => v.userId === currentUser?.id);
+  const [userVehicles, setUserVehicles] = useState<Vehicle[]>([]);
+
+  // Vehicle counts are secondary here, so a failed read stays at zero rather
+  // than replacing the whole dashboard with an error state.
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const list = await fetchVehicles();
+        if (!cancelled) setUserVehicles(list);
+      } catch {
+        // Ignored: the vehicles page surfaces the failure.
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const recommended = [...facilities]
     .filter((f) => f.isReservable && f.openNow)

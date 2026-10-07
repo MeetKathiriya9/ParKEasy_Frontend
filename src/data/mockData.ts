@@ -1,5 +1,5 @@
 import type {
-  User, Vehicle, ParkingFacility, ParkingSpace, Reservation,
+  User, ParkingFacility, ParkingSpace, Reservation,
   ParkingSession, Violation, StaffMember, Review, Complaint,
   Notification, EVCharger, PricingRule, EventParking, AuditLog,
   PlatformUser, Report,
@@ -10,11 +10,6 @@ export const users: User[] = [
   { id: 'u2', name: 'Jamie Chen', email: 'jamie@email.com', role: 'staff', avatar: 'JC' },
   { id: 'u3', name: 'Priya Patel', email: 'priya@email.com', role: 'operator', avatar: 'PP' },
   { id: 'u4', name: 'Sam Rivera', email: 'sam@email.com', role: 'admin', avatar: 'SR' },
-];
-
-export const vehicles: Vehicle[] = [
-  { id: 'v1', userId: 'u1', plate: 'GLR-2841', make: 'Tesla', model: 'Model 3', color: 'White', isEV: true, isDefault: true },
-  { id: 'v2', userId: 'u1', plate: 'MXD-7732', make: 'Honda', model: 'Civic', color: 'Silver', isEV: false, isDefault: false },
 ];
 
 export const facilities: ParkingFacility[] = [
