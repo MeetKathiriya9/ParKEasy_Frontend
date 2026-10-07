@@ -5,8 +5,11 @@ export interface User {
   name: string;
   email: string;
   role: Role;
+  /** Fallback initials, shown when there is no `photoUrl`. */
   avatar: string;
   phone?: string;
+  /** Server-hosted compressed avatar. Absent or null means "use initials". */
+  photoUrl?: string | null;
 }
 
 export interface Vehicle {

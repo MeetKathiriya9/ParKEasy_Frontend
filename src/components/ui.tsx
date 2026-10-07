@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+import { useState, type ReactNode } from 'react';
 
 export function StatCard({
   icon,
@@ -113,10 +113,39 @@ export function Modal({ open, onClose, title, children, maxWidth = 'max-w-lg' }:
   );
 }
 
-export function Avatar({ initials, size = 'md' }: { initials: string; size?: 'sm' | 'md' | 'lg' }) {
-  const sizeMap = { sm: 'w-8 h-8 text-xs', md: 'w-10 h-10 text-sm', lg: 'w-14 h-14 text-lg' };
+export function Avatar({
+  initials,
+  src,
+  size = 'md',
+  className = '',
+}: {
+  initials: string;
+  /** Avatar image URL. Falls back to `initials` when absent. */
+  src?: string | null;
+  size?: 'xs' | 'sm' | 'md' | 'lg';
+  className?: string;
+}) {
+  const sizeMap = {
+    xs: 'w-9 h-9 text-sm',
+    sm: 'w-8 h-8 text-xs',
+    md: 'w-10 h-10 text-sm',
+    lg: 'w-14 h-14 text-lg',
+  };
+  // A missing or cached-away file must degrade to initials, not to the
+  // browser's broken-image glyph.
+  const [failed, setFailed] = useState(false);
+  if (src && !failed) {
+    return (
+      <img
+        src={src}
+        alt={initials}
+        onError={() => setFailed(true)}
+        className={`${sizeMap[size]} rounded-full object-cover bg-[#1e2d4d] ${className}`}
+      />
+    );
+  }
   return (
-    <div className={`${sizeMap[size]} rounded-full bg-gradient-to-br from-[#2563eb] to-[#06b6d4] flex items-center justify-center font-bold text-white`}>
+    <div className={`${sizeMap[size]} rounded-full bg-gradient-to-br from-[#2563eb] to-[#06b6d4] flex items-center justify-center font-bold text-white ${className}`}>
       {initials}
     </div>
   );

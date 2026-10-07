@@ -29,6 +29,8 @@ export const endpoints = {
   users: {
     me: `${API_PREFIX}/users/me`,
     updateMe: `${API_PREFIX}/users/me`,
+    /** `POST` to upload/replace the photo, `DELETE` to remove it. */
+    photo: `${API_PREFIX}/users/me/photo`,
   },
   vehicles: {
     list: `${API_PREFIX}/vehicles`,

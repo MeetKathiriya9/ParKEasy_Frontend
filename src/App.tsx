@@ -5,6 +5,7 @@ import { RegisterPage } from '@/pages/RegisterPage';
 import { ForgotPasswordPage } from '@/pages/ForgotPasswordPage';
 import { ResetPasswordPage } from '@/pages/ResetPasswordPage';
 import { ChangePasswordPage } from '@/pages/ChangePasswordPage';
+import { ProfilePage } from '@/pages/ProfilePage';
 import { DriverDashboard } from '@/pages/driver/DriverDashboard';
 import { DriverSearch } from '@/pages/driver/DriverSearch';
 import { DriverFacility } from '@/pages/driver/DriverFacility';
@@ -75,6 +76,7 @@ function Router() {
 
   const pageMap: Record<string, React.ReactNode> = {
     'change-password': <ChangePasswordPage />,
+    profile: <ProfilePage />,
     'driver-dashboard': <DriverDashboard />,
     'driver-search': <DriverSearch />,
     'driver-facility': <DriverFacility />,

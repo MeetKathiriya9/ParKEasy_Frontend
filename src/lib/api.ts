@@ -35,6 +35,7 @@ export type ApiErrorCode =
   | 'NOT_IMPLEMENTED'
   | 'DUPLICATE_KEY'
   | 'RATE_LIMITED'
+  | 'REQUEST_TOO_LARGE'
   | 'DATABASE_UNAVAILABLE'
   | 'DATABASE_ERROR'
   | 'INVALID_CREDENTIALS'
@@ -97,10 +98,19 @@ export function setUnauthorizedHandler(handler: UnauthorizedHandler | null): voi
   onUnauthorized = handler;
 }
 
+/**
+ * Shared Axios instance.
+ *
+ * Deliberately does **not** set a default `Content-Type`. Axios sets
+ * `application/json` itself for plain-object bodies, whereas a forced JSON
+ * default breaks `FormData`: axios 1.x sees a JSON content type alongside a
+ * `FormData` payload and converts the whole body to JSON, so the boundary is
+ * lost and the server receives no file. Leaving the header unset lets the
+ * browser set `multipart/form-data; boundary=...` for uploads.
+ */
 const http: AxiosInstance = axios.create({
   baseURL: BASE_URL,
   timeout: 20_000,
-  headers: { 'Content-Type': 'application/json' },
 });
 
 http.interceptors.request.use((config) => {
@@ -175,3 +185,28 @@ export async function del<T>(url: string, config?: AxiosRequestConfig): Promise<
 
 export { http };
 export const apiBaseUrl = BASE_URL;
+
+/**
+ * Turn a server-relative path (such as a `photoUrl`) into something usable in
+ * an `<img src>`.
+ *
+ * `<img>` cannot send an `Authorization` header, which is why avatar URLs are
+ * public; this only handles the *origin*. When `BASE_URL` is empty (the Vite
+ * proxy case) the path is already correct, and when `VITE_API_URL` points at
+ * the backend directly the prefix is what makes the image resolve.
+ *
+ * The join goes through `URL` rather than string concatenation: `BASE_URL` often
+ * has a trailing slash and these paths always start with one, and plain `+`
+ * would produce `//api/v1/avatars/...` - a URL the router does not match, so
+ * every avatar 404s and renders as a broken image.
+ */
+export function apiUrl(path: string): string {
+  if (!path) return path;
+  if (/^[a-z][a-z0-9+.-]*:/i.test(path)) return path; // already absolute
+  if (!BASE_URL) return path; // same-origin behind the Vite proxy
+  try {
+    return new URL(path, BASE_URL).toString();
+  } catch {
+    return `${BASE_URL.replace(/\/+$/, '')}/${path.replace(/^\/+/, '')}`;
+  }
+}

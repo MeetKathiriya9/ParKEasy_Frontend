@@ -1,6 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from 'react';
 import type { Role, User } from '@/types';
 import {
+  cacheUser,
   fetchCurrentUser,
   getCachedUser,
   initialsOf,
@@ -11,7 +12,7 @@ import {
   type LoginInput,
   type RegisterInput,
 } from '@/lib/auth';
-import { ApiError, setUnauthorizedHandler } from '@/lib/api';
+import { ApiError, apiUrl, setUnauthorizedHandler } from '@/lib/api';
 
 export type Page =
   | 'login'
@@ -21,6 +22,7 @@ export type Page =
   | 'reset-password'
   // authenticated
   | 'change-password'
+  | 'profile'
   // driver
   | 'driver-dashboard'
   | 'driver-search'
@@ -75,6 +77,9 @@ function toUser(profile: AuthUser): User {
     role: profile.role,
     avatar: initialsOf(profile.name) || profile.email.slice(0, 2).toUpperCase(),
     phone: profile.phone ?? undefined,
+    // Stored server-relative; resolved here so `<img src>` works whether the
+    // API is same-origin (Vite proxy) or on another host.
+    photoUrl: profile.photoUrl ? apiUrl(profile.photoUrl) : null,
   };
 }
 
@@ -104,6 +109,11 @@ interface AppState {
   login: (input: LoginInput) => Promise<AuthResult>;
   register: (input: RegisterInput) => Promise<AuthResult>;
   logout: () => Promise<void>;
+  /**
+   * Adopt a profile returned by a `/users/me` mutation: updates the shell and
+   * the cached copy so a reload keeps the change.
+   */
+  applyProfile: (profile: AuthUser) => void;
   /** Drops the in-memory session without calling the server. */
   clearLocalSession: () => void;
   navigate: (page: Page) => void;
@@ -203,6 +213,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setSelectedReservationId(null);
   }, []);
 
+  const applyProfile = useCallback((profile: AuthUser) => {
+    cacheUser(profile);
+    setCurrentUser(toUser(profile));
+  }, []);
+
   // The server invalidates every token on a password change, so the token in
   // localStorage is already dead by the time the client hears about it. There
   // is nothing left to revoke, so this only resets local state.
@@ -252,6 +267,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         login,
         register,
         logout,
+        applyProfile,
         clearLocalSession,
         navigate,
         goBack,

@@ -5,8 +5,9 @@ import {
   LayoutDashboard, Search, CalendarCheck, Clock, History, Car, Bell,
   Star, MessageSquare, QrCode, ScanLine, AlertTriangle, ParkingSquare,
   Building2, DollarSign, Users, BarChart3, CalendarDays, Settings,
-  FileText, Shield, LogOut, Menu, X, Zap, KeyRound, ChevronDown,
+  FileText, Shield, LogOut, Menu, X, Zap, KeyRound, ChevronDown, UserRound,
 } from 'lucide-react';
+import { Avatar } from '@/components/ui';
 
 interface NavItem {
   page: Page;
@@ -30,6 +31,7 @@ const navConfig: Record<Role, { groups: { title: string; items: NavItem[] }[] }>
       {
         title: 'Account',
         items: [
+          { page: 'profile', label: 'My Profile', icon: <UserRound size={18} /> },
           { page: 'driver-vehicles', label: 'My Vehicles', icon: <Car size={18} /> },
           { page: 'driver-notifications', label: 'Notifications', icon: <Bell size={18} /> },
           { page: 'driver-reviews', label: 'My Reviews', icon: <Star size={18} /> },
@@ -50,6 +52,10 @@ const navConfig: Record<Role, { groups: { title: string; items: NavItem[] }[] }>
           { page: 'staff-spaces', label: 'Space Status', icon: <ParkingSquare size={18} /> },
           { page: 'staff-activity', label: 'My Activity', icon: <History size={18} /> },
         ],
+      },
+      {
+        title: 'Account',
+        items: [{ page: 'profile', label: 'My Profile', icon: <UserRound size={18} /> }],
       },
     ],
   },
@@ -75,6 +81,10 @@ const navConfig: Record<Role, { groups: { title: string; items: NavItem[] }[] }>
           { page: 'operator-violations', label: 'Violations', icon: <AlertTriangle size={18} /> },
         ],
       },
+      {
+        title: 'Account',
+        items: [{ page: 'profile', label: 'My Profile', icon: <UserRound size={18} /> }],
+      },
     ],
   },
   admin: {
@@ -95,6 +105,10 @@ const navConfig: Record<Role, { groups: { title: string; items: NavItem[] }[] }>
           { page: 'admin-audit', label: 'Audit Logs', icon: <FileText size={18} /> },
           { page: 'admin-config', label: 'Configuration', icon: <Settings size={18} /> },
         ],
+      },
+      {
+        title: 'Account',
+        items: [{ page: 'profile', label: 'My Profile', icon: <UserRound size={18} /> }],
       },
     ],
   },
@@ -202,9 +216,11 @@ function TopBar() {
                 aria-haspopup="menu"
                 className="flex items-center gap-2 rounded-lg px-1.5 py-1 hover:bg-[#1e2d4d] transition-colors"
               >
-                <div className="w-9 h-9 rounded-full bg-gradient-to-br from-[#2563eb] to-[#06b6d4] flex items-center justify-center font-bold text-white text-sm">
-                  {currentUser?.avatar}
-                </div>
+                <Avatar
+                  initials={currentUser?.avatar ?? ''}
+                  src={currentUser?.photoUrl}
+                  size="xs"
+                />
                 <div className="hidden sm:block text-left">
                   <p className="text-sm font-semibold leading-tight">{currentUser?.name}</p>
                   <p className="text-[10px] text-[#5a6a8a] capitalize">{currentUser?.role}</p>
@@ -234,6 +250,17 @@ function TopBar() {
                       <p className="text-sm font-semibold truncate">{currentUser?.name}</p>
                       <p className="text-[11px] text-[#8a98b5] truncate">{currentUser?.email}</p>
                     </div>
+                    <button
+                      role="menuitem"
+                      onClick={() => {
+                        setAccountMenuOpen(false);
+                        navigate('profile');
+                      }}
+                      className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-[#8a98b5] hover:bg-[#1e2d4d] hover:text-[#e8edf5] transition-colors"
+                    >
+                      <UserRound size={15} />
+                      My profile
+                    </button>
                     <button
                       role="menuitem"
                       onClick={() => {

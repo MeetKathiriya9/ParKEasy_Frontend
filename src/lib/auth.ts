@@ -13,6 +13,8 @@ export interface AuthUser {
   role: Role;
   status: UserStatus;
   facilityIds: string[];
+  /** Compressed avatar URL from the server, or null to fall back to initials. */
+  photoUrl: string | null;
   createdAt: string | null;
   lastLoginAt: string | null;
 }
@@ -128,6 +130,16 @@ export async function logout(): Promise<void> {
 /** The cached profile from `localStorage`, used to render the shell on reload. */
 export function getCachedUser(): AuthUser | null {
   return getStoredUser<AuthUser>();
+}
+
+/**
+ * Refresh the cached copy of the signed-in user.
+ *
+ * Called after a profile or photo change so a reload shows the new details
+ * without waiting for the next `/auth/me`. Does not touch the access token.
+ */
+export function cacheUser(user: AuthUser): void {
+  setStoredUser(user);
 }
 
 /**
