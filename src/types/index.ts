@@ -44,6 +44,90 @@ export interface VehicleCreateInput {
 /** Body of `PATCH /vehicles/{id}`: send only what changed. */
 export type VehicleUpdateInput = Partial<VehicleCreateInput>;
 
+/** DOC section 17 facility states, uppercase on the wire. */
+export type FacilityStatus = 'ACTIVE' | 'INACTIVE' | 'TEMPORARILY_CLOSED' | 'MAINTENANCE';
+
+/** DOC amenity values, lowercase on the wire. */
+export type Amenity =
+  | 'ev_charging'
+  | 'covered'
+  | 'security'
+  | 'cameras'
+  | 'restrooms'
+  | 'accessible'
+  | 'valet'
+  | 'elevator';
+
+export interface Facility {
+  id: string;
+  operatorId: string;
+  /** Display name of the owning operator; resolved server-side. */
+  operatorName?: string | null;
+  name: string;
+  description?: string | null;
+  address: string;
+  city?: string | null;
+  /** Derived from the GeoJSON `location` at the API boundary. */
+  lat: number | null;
+  lng: number | null;
+  capacity: number;
+  open24h: boolean;
+  /** "HH:MM", required when `open24h` is false. */
+  openingTime?: string | null;
+  closingTime?: string | null;
+  amenities: Amenity[];
+  hasEV: boolean;
+  hasCovered: boolean;
+  hasAccessible: boolean;
+  /** Computed from hours at the API boundary; never stored. */
+  isOpenNow: boolean;
+  hourlyRate?: number | null;
+  dailyMax?: number | null;
+  status: FacilityStatus;
+  createdAt?: string | null;
+  updatedAt?: string | null;
+}
+
+/** Body of `POST /facilities`. Status is server-set; spaces are a later phase. */
+export interface FacilityCreateInput {
+  name: string;
+  address: string;
+  city?: string;
+  lat: number;
+  lng: number;
+  capacity: number;
+  open24h: boolean;
+  openingTime?: string;
+  closingTime?: string;
+  amenities: Amenity[];
+  description?: string;
+  hourlyRate?: number;
+  dailyMax?: number;
+}
+
+/** Body of `PATCH /facilities/{id}`: send only what changed; null clears. */
+export interface FacilityUpdateInput {
+  name?: string;
+  description?: string | null;
+  address?: string;
+  city?: string | null;
+  lat?: number;
+  lng?: number;
+  capacity?: number;
+  open24h?: boolean;
+  openingTime?: string | null;
+  closingTime?: string | null;
+  amenities?: Amenity[];
+  hourlyRate?: number | null;
+  dailyMax?: number | null;
+}
+
+/** Body of `PATCH /facilities/{id}/status`. `status` is not part of PATCH. */
+export interface FacilityStatusInput {
+  status: FacilityStatus;
+  reason?: string;
+}
+
 export type SpaceStatus = 'available' | 'occupied' | 'reserved' | 'maintenance';
 export type SpaceType = 'standard' | 'compact' | 'large' | 'ev' | 'accessible';
 

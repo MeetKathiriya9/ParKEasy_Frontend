@@ -40,6 +40,16 @@ export const endpoints = {
     setDefault: (id: string) => `${API_PREFIX}/vehicles/${id}/default`,
   },
 
+  // --- Facility management (operator/admin CRUD, later phase for discovery) ---
+  facilities: {
+    list: `${API_PREFIX}/facilities`,
+    create: `${API_PREFIX}/facilities`,
+    detail: (id: string) => `${API_PREFIX}/facilities/${id}`,
+    update: (id: string) => `${API_PREFIX}/facilities/${id}`,
+    remove: (id: string) => `${API_PREFIX}/facilities/${id}`,
+    updateStatus: (id: string) => `${API_PREFIX}/facilities/${id}/status`,
+  },
+
   // --- Parking discovery ---
   parking: {
     nearby: `${API_PREFIX}/parking/nearby`,

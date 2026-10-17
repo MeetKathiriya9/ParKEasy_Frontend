@@ -1,8 +1,16 @@
 import { useApp } from '@/context/AppContext';
-import { StatCard, SectionHeader, Badge, ProgressBar, MiniBarChart } from '@/components/ui';
+import { StatCard, SectionHeader, Badge, ProgressBar, MiniBarChart, Modal } from '@/components/ui';
+import { ApiError } from '@/lib/api';
+import {
+  FACILITY_STATUS_COLORS,
+  FACILITY_STATUS_LABELS,
+  changeFacilityStatus,
+  fetchFacilities,
+} from '@/lib/facilities';
 import { platformUsers, facilities, reports, auditLogs, complaints, reservations, weeklyRevenue } from '@/data/mockData';
-import { Users, Building2, DollarSign, AlertTriangle, FileText, Shield, Settings, TrendingUp, CheckCircle2, Download } from 'lucide-react';
-import { useState } from 'react';
+import type { Facility, FacilityStatus } from '@/types';
+import { Users, Building2, DollarSign, AlertTriangle, FileText, Shield, Settings, TrendingUp, CheckCircle2, Download, Loader2, Power, RefreshCw } from 'lucide-react';
+import { useEffect, useState } from 'react';
 
 export function AdminDashboard() {
   const totalRevenue = reports.reduce((s, r) => s + r.revenue, 0);
@@ -138,37 +146,267 @@ export function AdminUsers() {
   );
 }
 
+const FACILITY_STATUSES: FacilityStatus[] = ['ACTIVE', 'INACTIVE', 'TEMPORARILY_CLOSED', 'MAINTENANCE'];
+
+function facilityAdminErrorMessage(err: unknown): string {
+  if (err instanceof ApiError) {
+    if (err.status === 401) return 'Your session has expired. Sign in again.';
+    if (err.status === 429) return 'Too many changes for now. Wait a while and try again.';
+  }
+  return err instanceof Error ? err.message : 'Something went wrong.';
+}
+
 export function AdminFacilities() {
+  const [list, setList] = useState<Facility[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [notice, setNotice] = useState('');
+  const [statusFor, setStatusFor] = useState<Facility | null>(null);
+  const [statusForm, setStatusForm] = useState<{ status: FacilityStatus; reason: string }>({
+    status: 'ACTIVE',
+    reason: '',
+  });
+  const [dialogError, setDialogError] = useState('');
+  const [busy, setBusy] = useState(false);
+
+  const refresh = async () => {
+    const list = await fetchFacilities();
+    setList(list);
+    setError('');
+  };
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const all = await fetchFacilities();
+        if (!cancelled) setList(all);
+      } catch (err) {
+        if (!cancelled) setError(facilityAdminErrorMessage(err));
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const openStatusChange = (facility: Facility) => {
+    setStatusForm({
+      status: FACILITY_STATUSES.find((s) => s !== facility.status) ?? 'ACTIVE',
+      reason: '',
+    });
+    setDialogError('');
+    setNotice('');
+    setStatusFor(facility);
+  };
+
+  const handleStatusChange = async () => {
+    if (!statusFor) return;
+    setDialogError('');
+    if (statusForm.status === statusFor.status) {
+      setDialogError('Pick a different status.');
+      return;
+    }
+    const reason = statusForm.reason.trim();
+    if (statusFor.status === 'ACTIVE' && reason === '') {
+      setDialogError('A reason is required when moving a facility out of active service.');
+      return;
+    }
+    setBusy(true);
+    try {
+      const updated = await changeFacilityStatus(statusFor.id, {
+        status: statusForm.status,
+        ...(reason === '' ? {} : { reason }),
+      });
+      setList((all) => all.map((f) => (f.id === updated.id ? updated : f)));
+      setStatusFor(null);
+      setNotice(`${updated.name} is now ${FACILITY_STATUS_LABELS[updated.status].toLowerCase()}.`);
+    } catch (err) {
+      setDialogError(facilityAdminErrorMessage(err));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const handleRetry = async () => {
+    setLoading(true);
+    setError('');
+    try {
+      await refresh();
+    } catch (err) {
+      setError(facilityAdminErrorMessage(err));
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div>
       <SectionHeader title="All Facilities" subtitle="Platform-wide facility management" />
 
-      <div className="pe-card overflow-hidden">
-        <table className="w-full">
-          <thead>
-            <tr className="border-b border-[#1e2d4d] text-xs text-[#8a98b5] uppercase">
-              <th className="text-left p-3 font-medium">Facility</th>
-              <th className="text-left p-3 font-medium">Address</th>
-              <th className="text-right p-3 font-medium">Spaces</th>
-              <th className="text-right p-3 font-medium">Rate</th>
-              <th className="text-right p-3 font-medium">Rating</th>
-              <th className="text-left p-3 font-medium">Status</th>
-            </tr>
-          </thead>
-          <tbody>
-            {facilities.map(f => (
-              <tr key={f.id} className="border-b border-[#1e2d4d] last:border-0 text-sm">
-                <td className="p-3 font-medium">{f.name}</td>
-                <td className="p-3 text-[#8a98b5]">{f.address}</td>
-                <td className="p-3 text-right">{f.totalSpaces}</td>
-                <td className="p-3 text-right">${f.hourlyRate}/hr</td>
-                <td className="p-3 text-right">{f.rating} ★</td>
-                <td className="p-3">{f.openNow ? <Badge color="green">Open</Badge> : <Badge color="red">Closed</Badge>}</td>
+      {notice && !error && (
+        <div className="mb-4 rounded-lg border border-[#10b981]/40 bg-[#10b981]/10 px-3 py-2 text-sm text-[#6ee7b7] flex items-center gap-2">
+          <CheckCircle2 size={15} />
+          {notice}
+        </div>
+      )}
+      {error && (
+        <div
+          role="alert"
+          className="mb-4 rounded-lg border border-[#ef4444]/40 bg-[#ef4444]/10 px-3 py-2 text-sm text-[#fca5a5] flex items-center gap-2"
+        >
+          <AlertTriangle size={15} />
+          {error}
+          <button type="button" onClick={handleRetry} className="ml-auto pe-btn-outline text-xs">
+            <RefreshCw size={13} /> Retry
+          </button>
+        </div>
+      )}
+
+      {loading ? (
+        <div className="pe-card p-10 flex items-center justify-center gap-2 text-sm text-[#8a98b5]">
+          <Loader2 size={16} className="animate-spin" />
+          Loading facilities
+        </div>
+      ) : (
+        <div className="pe-card overflow-hidden">
+          <table className="w-full">
+            <thead>
+              <tr className="border-b border-[#1e2d4d] text-xs text-[#8a98b5] uppercase">
+                <th className="text-left p-3 font-medium">Facility</th>
+                <th className="text-left p-3 font-medium">Address</th>
+                <th className="text-right p-3 font-medium">Capacity</th>
+                <th className="text-left p-3 font-medium">Operator</th>
+                <th className="text-left p-3 font-medium">Status</th>
+                <th className="text-left p-3 font-medium">Actions</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+            </thead>
+            <tbody>
+              {list.length === 0 && (
+                <tr>
+                  <td colSpan={6} className="p-8 text-center text-sm text-[#8a98b5]">
+                    No facilities on the platform yet.
+                  </td>
+                </tr>
+              )}
+              {list.map((f) => (
+                <tr key={f.id} className="border-b border-[#1e2d4d] last:border-0 text-sm">
+                  <td className="p-3 font-medium">{f.name}</td>
+                  <td className="p-3 text-[#8a98b5]">
+                    {f.address}
+                    {f.city ? `, ${f.city}` : ''}
+                  </td>
+                  <td className="p-3 text-right">{f.capacity}</td>
+                  <td className="p-3" title={f.operatorId}>
+                    {f.operatorName ? (
+                      <span>{f.operatorName}</span>
+                    ) : (
+                      <span className="font-mono text-xs text-[#8a98b5]">{f.operatorId}</span>
+                    )}
+                  </td>
+                  <td className="p-3">
+                    <Badge color={FACILITY_STATUS_COLORS[f.status]}>
+                      {FACILITY_STATUS_LABELS[f.status]}
+                    </Badge>
+                  </td>
+                  <td className="p-3">
+                    <button
+                      type="button"
+                      onClick={() => openStatusChange(f)}
+                      className="text-xs text-[#3b82f6] hover:underline flex items-center gap-1"
+                      disabled={busy}
+                    >
+                      <Power size={12} /> Change status
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      <Modal
+        open={statusFor !== null}
+        onClose={() => {
+          if (busy) return;
+          setStatusFor(null);
+        }}
+        title="Change status"
+        maxWidth="max-w-md"
+      >
+        <div className="space-y-4">
+          <p className="text-sm text-[#8a98b5]">
+            <span className="text-[#e8edf5] font-semibold">{statusFor?.name}</span> is currently{' '}
+            <span className="font-medium">
+              {statusFor ? FACILITY_STATUS_LABELS[statusFor.status] : ''}
+            </span>
+            .
+          </p>
+          <div>
+            <label htmlFor="admin-facility-status" className="text-xs text-[#8a98b5] font-medium mb-1.5 block">
+              New status
+            </label>
+            <select
+              id="admin-facility-status"
+              value={statusForm.status}
+              onChange={(e) =>
+                setStatusForm({ ...statusForm, status: e.target.value as FacilityStatus })
+              }
+              className="pe-input"
+            >
+              {FACILITY_STATUSES.map((s) => (
+                <option key={s} value={s}>
+                  {FACILITY_STATUS_LABELS[s]}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label htmlFor="admin-facility-reason" className="text-xs text-[#8a98b5] font-medium mb-1.5 block">
+              Reason {statusFor?.status === 'ACTIVE' ? '(required)' : '(optional)'}
+            </label>
+            <textarea
+              id="admin-facility-reason"
+              value={statusForm.reason}
+              onChange={(e) => setStatusForm({ ...statusForm, reason: e.target.value })}
+              placeholder="e.g. safety inspection"
+              maxLength={200}
+              rows={2}
+              className="pe-input resize-y"
+            />
+          </div>
+          {dialogError && (
+            <div
+              role="alert"
+              className="rounded-lg border border-[#ef4444]/40 bg-[#ef4444]/10 px-3 py-2 text-sm text-[#fca5a5]"
+            >
+              {dialogError}
+            </div>
+          )}
+          <div className="flex gap-3">
+            <button
+              type="button"
+              onClick={() => setStatusFor(null)}
+              disabled={busy}
+              className="pe-btn-outline flex-1 disabled:opacity-60"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              onClick={handleStatusChange}
+              disabled={busy}
+              className="pe-btn-primary flex-1 disabled:opacity-60"
+            >
+              {busy ? <Loader2 size={16} className="animate-spin" /> : <Power size={16} />}
+              Apply
+            </button>
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 }
