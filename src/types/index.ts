@@ -10,6 +10,11 @@ export interface User {
   phone?: string;
   /** Server-hosted compressed avatar. Absent or null means "use initials". */
   photoUrl?: string | null;
+  /**
+   * Facilities this account may act on. Empty for drivers and admins (who see
+   * every facility); staff and operators read this to know what is theirs.
+   */
+  facilityIds?: string[];
 }
 
 /** DOC section 18 vehicle body styles. Stored lowercase on the wire. */
@@ -70,7 +75,10 @@ export interface Facility {
   /** Derived from the GeoJSON `location` at the API boundary. */
   lat: number | null;
   lng: number | null;
+  /** Derived from the count of the facility's spaces; never writable. */
   capacity: number;
+  /** Per-status tally of the facility's spaces, computed at the API boundary. */
+  spaceCounts: SpaceCounts;
   open24h: boolean;
   /** "HH:MM", required when `open24h` is false. */
   openingTime?: string | null;
@@ -88,14 +96,13 @@ export interface Facility {
   updatedAt?: string | null;
 }
 
-/** Body of `POST /facilities`. Status is server-set; spaces are a later phase. */
+/** Body of `POST /facilities`. Status is server-set; capacity is derived. */
 export interface FacilityCreateInput {
   name: string;
   address: string;
   city?: string;
   lat: number;
   lng: number;
-  capacity: number;
   open24h: boolean;
   openingTime?: string;
   closingTime?: string;
@@ -113,7 +120,6 @@ export interface FacilityUpdateInput {
   city?: string | null;
   lat?: number;
   lng?: number;
-  capacity?: number;
   open24h?: boolean;
   openingTime?: string | null;
   closingTime?: string | null;
@@ -128,9 +134,108 @@ export interface FacilityStatusInput {
   reason?: string;
 }
 
-export type SpaceStatus = 'available' | 'occupied' | 'reserved' | 'maintenance';
+/** DOC section 18 space statuses. `occupied`/`reserved` belong to the engine. */
+export type SpaceStatus = 'available' | 'occupied' | 'reserved' | 'maintenance' | 'blocked';
+
+/** DOC section 18 space types, lowercase on the wire. */
 export type SpaceType = 'standard' | 'compact' | 'large' | 'ev' | 'accessible';
 
+/** DOC section 17 zone states, uppercase on the wire. */
+export type ZoneStatus = 'ACTIVE' | 'INACTIVE';
+
+/** Per-status space tally, derived at the API boundary. */
+export interface SpaceCounts {
+  total: number;
+  available: number;
+  occupied: number;
+  reserved: number;
+  maintenance: number;
+  blocked: number;
+}
+
+/** `GET /facilities/{id}/floors` - a floor plus the zones nested under it. */
+export interface Floor {
+  id: string;
+  facilityId: string;
+  name: string;
+  level: number;
+  zones: Zone[];
+  createdAt?: string | null;
+  updatedAt?: string | null;
+}
+
+export interface Zone {
+  id: string;
+  facilityId: string;
+  floorId: string;
+  name: string;
+  status: ZoneStatus;
+  closeReason?: string | null;
+  createdAt?: string | null;
+  updatedAt?: string | null;
+}
+
+export interface Space {
+  id: string;
+  facilityId: string;
+  floorId: string;
+  /** Denormalized snapshot of the floor's name at the last rename. */
+  floorName?: string | null;
+  zoneId: string;
+  /** Denormalized snapshot of the zone's name at the last rename. */
+  zoneName?: string | null;
+  spaceNumber: string;
+  type: SpaceType;
+  status: SpaceStatus;
+  reservable: boolean;
+  createdAt?: string | null;
+  updatedAt?: string | null;
+}
+
+export interface FloorInput {
+  name: string;
+  level?: number;
+}
+
+export type FloorUpdateInput = Partial<FloorInput>;
+
+export interface ZoneInput {
+  name: string;
+}
+
+export interface ZoneStatusInput {
+  status: ZoneStatus;
+  reason?: string;
+}
+
+export interface SpaceInput {
+  spaceNumber: string;
+  type?: SpaceType;
+  reservable?: boolean;
+}
+
+export type SpaceUpdateInput = Partial<SpaceInput>;
+
+export interface SpaceStatusInput {
+  status: SpaceStatus;
+  reason?: string;
+}
+
+/** Body of `POST /zones/{id}/spaces/bulk` - a run such as `A-01`..`A-50`. */
+export interface BulkSpacesInput {
+  prefix?: string;
+  start?: number;
+  count: number;
+  type?: SpaceType;
+  reservable?: boolean;
+  /** Fixed width; omitted, the server pads to two digits (or wider). */
+  pad?: number;
+}
+
+/**
+ * Mock-only space row for the driver discovery view (`DriverFacility.tsx`),
+ * which has no live `/parking` backend yet. The real wire shape is `Space`.
+ */
 export interface ParkingSpace {
   id: string;
   facilityId: string;

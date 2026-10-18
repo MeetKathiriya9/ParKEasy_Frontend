@@ -1,58 +1,8 @@
 import { useState } from 'react';
-import { SectionHeader, Badge, Modal, ProgressBar } from '@/components/ui';
-import { spaces, facilities, pricingRules, staffMembers, reservations, violations, complaints, reports, eventParkings, weeklyRevenue, hourlyOccupancy } from '@/data/mockData';
-import { Plus, DollarSign, Users, CalendarCheck, AlertTriangle, TrendingUp, BarChart3, CalendarDays, Download, Building2, Zap, Car, MessageSquare } from 'lucide-react';
+import { SectionHeader, Badge, Modal } from '@/components/ui';
+import { facilities, pricingRules, staffMembers, reservations, violations, complaints, reports, eventParkings, weeklyRevenue, hourlyOccupancy } from '@/data/mockData';
+import { Plus, DollarSign, Users, CalendarCheck, AlertTriangle, TrendingUp, BarChart3, CalendarDays, Download } from 'lucide-react';
 import { StatCard, MiniBarChart, MiniLineChart } from '@/components/ui';
-
-export function OperatorSpaces() {
-  const [selectedFacility, setSelectedFacility] = useState(facilities[0].id);
-  const facilitySpaces = spaces.filter(s => s.facilityId === selectedFacility);
-
-  const statusColors: Record<string, string> = {
-    available: 'bg-[#10b981]/20 border-[#10b981] text-[#10b981]',
-    occupied: 'bg-[#ef4444]/20 border-[#ef4444] text-[#ef4444]',
-    reserved: 'bg-[#f59e0b]/20 border-[#f59e0b] text-[#f59e0b]',
-    maintenance: 'bg-[#2a3a5c] border-[#3a4a6c] text-[#8a98b5]',
-  };
-
-  return (
-    <div>
-      <SectionHeader title="Space Management" subtitle="Configure floors, zones, and spaces" action={<button className="pe-btn-primary"><Plus size={16} /> Add Space</button>} />
-
-      <div className="flex gap-2 mb-4 flex-wrap">
-        {facilities.map(f => (
-          <button key={f.id} onClick={() => setSelectedFacility(f.id)} className={selectedFacility === f.id ? 'pe-chip-active' : 'pe-chip-idle'}>
-            {f.name}
-          </button>
-        ))}
-      </div>
-
-      <div className="pe-card p-5">
-        {['1', '2', '3'].map(floor => {
-          const floorSpaces = facilitySpaces.filter(s => s.floor === floor);
-          if (floorSpaces.length === 0) return null;
-          return (
-            <div key={floor} className="mb-6">
-              <div className="flex items-center justify-between mb-3">
-                <p className="text-sm font-medium text-[#8a98b5]">Floor {floor}</p>
-                <button className="text-xs text-[#3b82f6] hover:underline">+ Add Zone</button>
-              </div>
-              <div className="grid grid-cols-5 md:grid-cols-10 gap-2">
-                {floorSpaces.map(s => (
-                  <div key={s.id} className={`rounded-lg border p-2 text-center text-xs font-semibold ${statusColors[s.status]}`}>
-                    {s.label}
-                    <p className="text-[9px] mt-0.5 capitalize">{s.type}</p>
-                  </div>
-                ))}
-              </div>
-            </div>
-          );
-        })}
-        {facilitySpaces.length === 0 && <p className="text-center text-[#8a98b5] py-8">No spaces configured for this facility.</p>}
-      </div>
-    </div>
-  );
-}
 
 export function OperatorPricing() {
   const [selectedFacility, setSelectedFacility] = useState(facilities[0].id);

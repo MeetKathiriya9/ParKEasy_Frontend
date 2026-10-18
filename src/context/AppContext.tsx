@@ -57,6 +57,7 @@ export type Page =
   | 'admin-dashboard'
   | 'admin-users'
   | 'admin-facilities'
+  | 'admin-spaces'
   | 'admin-payments'
   | 'admin-complaints'
   | 'admin-audit'
@@ -80,6 +81,7 @@ function toUser(profile: AuthUser): User {
     // Stored server-relative; resolved here so `<img src>` works whether the
     // API is same-origin (Vite proxy) or on another host.
     photoUrl: profile.photoUrl ? apiUrl(profile.photoUrl) : null,
+    facilityIds: profile.facilityIds ?? [],
   };
 }
 

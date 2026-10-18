@@ -31,7 +31,6 @@ interface FormState {
   city: string;
   lat: string;
   lng: string;
-  capacity: string;
   open24h: boolean;
   openingTime: string;
   closingTime: string;
@@ -47,7 +46,6 @@ const EMPTY_FORM: FormState = {
   city: '',
   lat: '',
   lng: '',
-  capacity: '100',
   open24h: false,
   openingTime: '08:00',
   closingTime: '22:00',
@@ -167,7 +165,6 @@ export function OperatorFacilities() {
       city: facility.city ?? '',
       lat: facility.lat === null ? '' : String(facility.lat),
       lng: facility.lng === null ? '' : String(facility.lng),
-      capacity: String(facility.capacity),
       open24h: facility.open24h,
       openingTime: facility.openingTime ?? '08:00',
       closingTime: facility.closingTime ?? '22:00',
@@ -238,7 +235,6 @@ export function OperatorFacilities() {
     const description = form.description.trim();
     const lat = Number(form.lat);
     const lng = Number(form.lng);
-    const capacity = Number(form.capacity);
 
     if (name.length < 3 || name.length > 80) {
       return { values: null, error: 'Name must be 3-80 characters.' };
@@ -257,9 +253,6 @@ export function OperatorFacilities() {
     if (lng < -180 || lng > 180) {
       return { values: null, error: 'Longitude must be between -180 and 180.' };
     }
-    if (!Number.isInteger(capacity) || capacity < 1 || capacity > 10000) {
-      return { values: null, error: 'Capacity must be a whole number from 1 to 10000.' };
-    }
     if (!facilityHoursAreValid(form.open24h, form.openingTime, form.closingTime)) {
       return {
         values: null,
@@ -270,7 +263,7 @@ export function OperatorFacilities() {
       return { values: null, error: 'Rates must be numbers greater than 0 and at most 10000.' };
     }
 
-    return { values: parseForm(form, { name, address, city, description, lat, lng, capacity }), error: '' };
+    return { values: parseForm(form, { name, address, city, description, lat, lng }), error: '' };
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -621,22 +614,7 @@ export function OperatorFacilities() {
             The map and these fields stay in sync - click the map to fill them, or type to move the pin.
           </p>
 
-          <div className="grid grid-cols-3 gap-3">
-            <div>
-              <label htmlFor="facility-capacity" className="text-xs text-[#8a98b5] font-medium mb-1.5 block">
-                Capacity
-              </label>
-              <input
-                id="facility-capacity"
-                type="number"
-                min={1}
-                max={10000}
-                value={form.capacity}
-                onChange={(e) => setForm({ ...form, capacity: e.target.value })}
-                className="pe-input"
-                autoComplete="off"
-              />
-            </div>
+          <div className="grid grid-cols-2 gap-3">
             <div>
               <label htmlFor="facility-hourly" className="text-xs text-[#8a98b5] font-medium mb-1.5 block">
                 Hourly rate
@@ -897,17 +875,17 @@ export function OperatorFacilities() {
   );
 }
 
-/** Builds the wire payloads from a validated form. */
+/** Builds the wire payloads from a validated form. Capacity is derived from
+ * the facility's spaces, so it is never part of either payload. */
 function parseForm(
   form: FormState,
-  v: { name: string; address: string; city: string; description: string; lat: number; lng: number; capacity: number },
+  v: { name: string; address: string; city: string; description: string; lat: number; lng: number },
 ): { create: Parameters<typeof createFacility>[0]; update: FacilityUpdateInput } {
   const common = {
     name: v.name,
     address: v.address,
     lat: v.lat,
     lng: v.lng,
-    capacity: v.capacity,
     open24h: form.open24h,
     amenities: form.amenities,
   };

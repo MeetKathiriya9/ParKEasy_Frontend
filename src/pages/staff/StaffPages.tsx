@@ -1,63 +1,9 @@
 import { SectionHeader, Badge } from '@/components/ui';
-import { spaces, reservations, staffMembers } from '@/data/mockData';
+import { reservations, staffMembers } from '@/data/mockData';
 import { useApp } from '@/context/AppContext';
-import { ParkingSquare, Clock, History, CheckCircle2, ScanLine, AlertTriangle } from 'lucide-react';
-import { useState } from 'react';
-
-export function StaffSpaces() {
-  const { currentUser } = useApp();
-  const staff = staffMembers.find((s) => s.name === currentUser?.name);
-  const facilitySpaces = spaces.filter((s) => s.facilityId === staff?.facilityId);
-
-  const [spaceStatuses, setSpaceStatuses] = useState(
-    Object.fromEntries(facilitySpaces.map((s) => [s.id, s.status]))
-  );
-
-  const toggleStatus = (id: string) => {
-    const current = spaceStatuses[id];
-    const next = current === 'available' ? 'maintenance' : 'available';
-    setSpaceStatuses({ ...spaceStatuses, [id]: next });
-  };
-
-  const statusColors: Record<string, string> = {
-    available: 'bg-[#10b981]/20 border-[#10b981] text-[#10b981]',
-    occupied: 'bg-[#ef4444]/20 border-[#ef4444] text-[#ef4444]',
-    reserved: 'bg-[#f59e0b]/20 border-[#f59e0b] text-[#f59e0b]',
-    maintenance: 'bg-[#2a3a5c] border-[#3a4a6c] text-[#8a98b5]',
-  };
-
-  return (
-    <div>
-      <SectionHeader title="Space Status" subtitle="View and update parking space status" />
-
-      <div className="pe-card p-5 mb-6">
-        <h2 className="font-semibold mb-4 flex items-center gap-2"><ParkingSquare size={18} /> Floor Plan</h2>
-        {['1', '2', '3'].map((floor) => (
-          <div key={floor} className="mb-6">
-            <p className="text-sm font-medium text-[#8a98b5] mb-2">Floor {floor}</p>
-            <div className="grid grid-cols-5 gap-2">
-              {facilitySpaces.filter((s) => s.floor === floor).map((s) => (
-                <button
-                  key={s.id}
-                  onClick={() => toggleStatus(s.id)}
-                  className={`rounded-lg border p-3 text-center text-xs font-semibold transition-all hover:scale-105 ${statusColors[spaceStatuses[s.id]]}`}
-                >
-                  {s.label}
-                  <p className="text-[10px] mt-1 capitalize">{spaceStatuses[s.id]}</p>
-                </button>
-              ))}
-            </div>
-          </div>
-        ))}
-        <p className="text-xs text-[#5a6a8a]">Click a space to toggle between available and maintenance</p>
-      </div>
-    </div>
-  );
-}
+import { History, CheckCircle2, ScanLine, AlertTriangle } from 'lucide-react';
 
 export function StaffSessions() {
-  const { currentUser } = useApp();
-  const staff = staffMembers.find((s) => s.name === currentUser?.name);
   const activeSessions = reservations.filter((r) => r.status === 'active');
 
   return (

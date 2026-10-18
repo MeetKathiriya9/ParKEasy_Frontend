@@ -95,6 +95,7 @@ const navConfig: Record<Role, { groups: { title: string; items: NavItem[] }[] }>
           { page: 'admin-dashboard', label: 'Dashboard', icon: <LayoutDashboard size={18} /> },
           { page: 'admin-users', label: 'Users', icon: <Users size={18} /> },
           { page: 'admin-facilities', label: 'Facilities', icon: <Building2 size={18} /> },
+          { page: 'admin-spaces', label: 'Spaces', icon: <ParkingSquare size={18} /> },
           { page: 'admin-payments', label: 'Payments', icon: <DollarSign size={18} /> },
           { page: 'admin-complaints', label: 'Complaints', icon: <MessageSquare size={18} /> },
         ],

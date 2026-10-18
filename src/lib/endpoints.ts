@@ -50,16 +50,29 @@ export const endpoints = {
     updateStatus: (id: string) => `${API_PREFIX}/facilities/${id}/status`,
   },
 
+  // --- Parking space management: Facility -> Floor -> Zone -> Space ---
+  spaces: {
+    /** The layout tree: floors with their zones nested, for a facility. */
+    floors: (facilityId: string) => `${API_PREFIX}/facilities/${facilityId}/floors`,
+    /** Every space in a facility, optionally narrowed by `floorId`/`status`. */
+    facilitySpaces: (facilityId: string) => `${API_PREFIX}/facilities/${facilityId}/spaces`,
+    floor: (floorId: string) => `${API_PREFIX}/floors/${floorId}`,
+    floorZones: (floorId: string) => `${API_PREFIX}/floors/${floorId}/zones`,
+    zone: (zoneId: string) => `${API_PREFIX}/zones/${zoneId}`,
+    zoneStatus: (zoneId: string) => `${API_PREFIX}/zones/${zoneId}/status`,
+    zoneSpaces: (zoneId: string) => `${API_PREFIX}/zones/${zoneId}/spaces`,
+    /** Bulk run create, e.g. `A-01`..`A-50` in one request. */
+    zoneSpacesBulk: (zoneId: string) => `${API_PREFIX}/zones/${zoneId}/spaces/bulk`,
+    detail: (spaceId: string) => `${API_PREFIX}/spaces/${spaceId}`,
+    updateStatus: (spaceId: string) => `${API_PREFIX}/spaces/${spaceId}/status`,
+  },
+
   // --- Parking discovery ---
   parking: {
     nearby: `${API_PREFIX}/parking/nearby`,
     search: `${API_PREFIX}/parking/search`,
     detail: (id: string) => `${API_PREFIX}/parking/${id}`,
     availability: (id: string) => `${API_PREFIX}/parking/${id}/availability`,
-  },
-  spaces: {
-    list: `${API_PREFIX}/spaces`,
-    updateStatus: (id: string) => `${API_PREFIX}/spaces/${id}/status`,
   },
 
   // --- Reservation & session ---

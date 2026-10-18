@@ -18,11 +18,13 @@ import { DriverReviews, DriverComplaints } from '@/pages/driver/DriverReviews';
 import { StaffDashboard } from '@/pages/staff/StaffDashboard';
 import { StaffScanner } from '@/pages/staff/StaffScanner';
 import { StaffViolations } from '@/pages/staff/StaffViolations';
-import { StaffSpaces, StaffSessions, StaffActivity } from '@/pages/staff/StaffPages';
+import { StaffSpaces } from '@/pages/staff/StaffSpaces';
+import { StaffSessions, StaffActivity } from '@/pages/staff/StaffPages';
 import { OperatorDashboard } from '@/pages/operator/OperatorDashboard';
 import { OperatorFacilities } from '@/pages/operator/OperatorFacilities';
+import { OperatorSpaces } from '@/pages/operator/OperatorSpaces';
 import {
-  OperatorSpaces, OperatorPricing, OperatorStaff, OperatorReservations,
+  OperatorPricing, OperatorStaff, OperatorReservations,
   OperatorAnalytics, OperatorEvents, OperatorComplaints, OperatorViolations,
 } from '@/pages/operator/OperatorPages';
 import {
@@ -106,6 +108,7 @@ function Router() {
     'admin-dashboard': <AdminDashboard />,
     'admin-users': <AdminUsers />,
     'admin-facilities': <AdminFacilities />,
+    'admin-spaces': <OperatorSpaces />,
     'admin-payments': <AdminPayments />,
     'admin-complaints': <AdminComplaints />,
     'admin-audit': <AdminAudit />,
