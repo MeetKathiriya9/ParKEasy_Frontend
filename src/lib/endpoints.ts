@@ -69,10 +69,14 @@ export const endpoints = {
 
   // --- Parking discovery ---
   parking: {
+    /** Facilities near a point, with filters, sorting and pagination. */
     nearby: `${API_PREFIX}/parking/nearby`,
-    search: `${API_PREFIX}/parking/search`,
+    /** One facility, driver-readable, with its live availability. */
     detail: (id: string) => `${API_PREFIX}/parking/${id}`,
+    /** The per-status space tally for one facility. */
     availability: (id: string) => `${API_PREFIX}/parking/${id}/availability`,
+    /** The facility's spaces, for the driver's layout grid. */
+    spaces: (id: string) => `${API_PREFIX}/parking/${id}/spaces`,
   },
 
   // --- Reservation & session ---

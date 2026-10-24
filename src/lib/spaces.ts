@@ -11,8 +11,8 @@
  * may never move it between zones; that is a delete-and-recreate, so the ids a
  * caller sees always match what is painted on the wall.
  *
- * A space's `status` may only be set to `available`, `maintenance` or
- * `blocked`: `occupied` and `reserved` belong to the reservation engine, and
+ * A space's `status` may only be set to `AVAILABLE`, `MAINTENANCE` or
+ * `BLOCKED`: `OCCUPIED` and `RESERVED` belong to the reservation engine, and
  * the server answers 422 if a person tries to set them.
  */
 
@@ -39,11 +39,11 @@ import type {
 
 /** Display names for the wire values of `SpaceStatus`. */
 export const SPACE_STATUS_LABELS: Record<SpaceStatus, string> = {
-  available: 'Available',
-  occupied: 'Occupied',
-  reserved: 'Reserved',
-  maintenance: 'Maintenance',
-  blocked: 'Blocked',
+  AVAILABLE: 'Available',
+  OCCUPIED: 'Occupied',
+  RESERVED: 'Reserved',
+  MAINTENANCE: 'Maintenance',
+  BLOCKED: 'Blocked',
 };
 
 /** Badge colors matching those labels. */
@@ -51,11 +51,11 @@ export const SPACE_STATUS_COLORS: Record<
   SpaceStatus,
   'green' | 'red' | 'amber' | 'gray'
 > = {
-  available: 'green',
-  occupied: 'red',
-  reserved: 'amber',
-  maintenance: 'gray',
-  blocked: 'gray',
+  AVAILABLE: 'green',
+  OCCUPIED: 'red',
+  RESERVED: 'amber',
+  MAINTENANCE: 'gray',
+  BLOCKED: 'gray',
 };
 
 /** Display names for the wire values of `SpaceType`. */
@@ -77,10 +77,10 @@ export const ZONE_STATUS_LABELS: Record<ZoneStatus, string> = {
  * The statuses a person may set. The rest belong to the reservation engine and
  * are refused with a 422 pointing here.
  */
-export const MANUAL_SPACE_STATUSES: SpaceStatus[] = ['available', 'maintenance', 'blocked'];
+export const MANUAL_SPACE_STATUSES: SpaceStatus[] = ['AVAILABLE', 'MAINTENANCE', 'BLOCKED'];
 
 /** Statuses a closed zone's spaces fall back to when it is closed. */
-export const ZONE_CLOSE_STATUSES: SpaceStatus[] = ['available', 'reserved', 'occupied'];
+export const ZONE_CLOSE_STATUSES: SpaceStatus[] = ['AVAILABLE', 'RESERVED', 'OCCUPIED'];
 
 // --- Floors ------------------------------------------------------------------
 

@@ -118,7 +118,7 @@ export function OperatorSpaces() {
   const [spaceForm, setSpaceForm] = useState<SpaceFormState>(EMPTY_SPACE_FORM);
   const [bulkForm, setBulkForm] = useState<BulkFormState>(EMPTY_BULK_FORM);
   const [statusForm, setStatusForm] = useState<{ status: SpaceStatus; reason: string }>({
-    status: 'available',
+    status: 'AVAILABLE',
     reason: '',
   });
   const [zoneStatusForm, setZoneStatusForm] = useState<{ status: 'ACTIVE' | 'INACTIVE'; reason: string }>({
@@ -1192,11 +1192,11 @@ function SpaceTile({
   onDelete: () => void;
 }) {
   const statusClass: Record<SpaceStatus, string> = {
-    available: 'bg-[#10b981]/20 border-[#10b981] text-[#10b981]',
-    occupied: 'bg-[#ef4444]/20 border-[#ef4444] text-[#ef4444]',
-    reserved: 'bg-[#f59e0b]/20 border-[#f59e0b] text-[#f59e0b]',
-    maintenance: 'bg-[#2a3a5c] border-[#3a4a6c] text-[#8a98b5]',
-    blocked: 'bg-[#2a3a5c] border-[#3a4a6c] text-[#8a98b5]',
+    AVAILABLE: 'bg-[#10b981]/20 border-[#10b981] text-[#10b981]',
+    OCCUPIED: 'bg-[#ef4444]/20 border-[#ef4444] text-[#ef4444]',
+    RESERVED: 'bg-[#f59e0b]/20 border-[#f59e0b] text-[#f59e0b]',
+    MAINTENANCE: 'bg-[#2a3a5c] border-[#3a4a6c] text-[#8a98b5]',
+    BLOCKED: 'bg-[#2a3a5c] border-[#3a4a6c] text-[#8a98b5]',
   };
 
   return (

@@ -1,7 +1,7 @@
-import type {
-  User, ParkingFacility, ParkingSpace, Reservation,
-  ParkingSession, Violation, StaffMember, Review, Complaint,
-  Notification, EVCharger, PricingRule, EventParking, AuditLog,
+﻿import type {
+  User, ParkingFacility, Reservation,
+  Violation, StaffMember, Complaint,
+  PricingRule, EventParking, AuditLog,
   PlatformUser, Report,
 } from '@/types';
 
@@ -63,19 +63,6 @@ export const facilities: ParkingFacility[] = [
   },
 ];
 
-export const spaces: ParkingSpace[] = [
-  { id: 's1', facilityId: 'f1', floor: '1', zone: 'A', label: 'A-12', type: 'standard', status: 'available' },
-  { id: 's2', facilityId: 'f1', floor: '1', zone: 'A', label: 'A-13', type: 'standard', status: 'occupied' },
-  { id: 's3', facilityId: 'f1', floor: '1', zone: 'A', label: 'A-14', type: 'ev', status: 'available' },
-  { id: 's4', facilityId: 'f1', floor: '1', zone: 'B', label: 'B-05', type: 'compact', status: 'reserved' },
-  { id: 's5', facilityId: 'f1', floor: '2', zone: 'C', label: 'C-01', type: 'accessible', status: 'available' },
-  { id: 's6', facilityId: 'f1', floor: '2', zone: 'C', label: 'C-02', type: 'standard', status: 'maintenance' },
-  { id: 's7', facilityId: 'f1', floor: '2', zone: 'D', label: 'D-10', type: 'large', status: 'available' },
-  { id: 's8', facilityId: 'f1', floor: '2', zone: 'D', label: 'D-11', type: 'ev', status: 'occupied' },
-  { id: 's9', facilityId: 'f1', floor: '3', zone: 'E', label: 'E-03', type: 'standard', status: 'available' },
-  { id: 's10', facilityId: 'f1', floor: '3', zone: 'E', label: 'E-04', type: 'standard', status: 'available' },
-];
-
 export const reservations: Reservation[] = [
   {
     id: 'r1', userId: 'u1', facilityId: 'f1', facilityName: 'Downtown Central Garage',
@@ -114,14 +101,6 @@ export const reservations: Reservation[] = [
   },
 ];
 
-export const activeSession: ParkingSession = {
-  id: 'ps1', reservationId: 'r1', facilityId: 'f1', facilityName: 'Downtown Central Garage',
-  spaceLabel: 'A-12', vehiclePlate: 'GLR-2841',
-  checkInTime: '2026-09-28T10:05', estimatedCheckOut: '2026-09-28T14:05',
-  elapsedMinutes: 127, remainingMinutes: 113, estimatedCost: 18, hourlyRate: 4.5, status: 'active',
-  evKwh: 12.5, evCost: 3.75,
-};
-
 export const violations: Violation[] = [
   {
     id: 'vio1', facilityId: 'f1', facilityName: 'Downtown Central Garage',
@@ -153,38 +132,11 @@ export const staffMembers: StaffMember[] = [
   { id: 'st5', name: 'Lisa Wong', email: 'lisa@email.com', phone: '555-0205', facilityId: 'f5', facilityName: 'Bayview EV Hub', role: 'Attendant', active: true, scansToday: 28, violationsLogged: 1, lastActive: '2026-09-28T09:15' },
 ];
 
-export const reviews: Review[] = [
-  { id: 'rv1', facilityId: 'f1', facilityName: 'Downtown Central Garage', userId: 'u1', userName: 'Alex Morgan', rating: 5, comment: 'Super clean and the EV charging was seamless. Will park here again!', date: '2026-09-25', category: 'EV Charging' },
-  { id: 'rv2', facilityId: 'f1', facilityName: 'Downtown Central Garage', userId: 'u10', userName: 'Sarah K.', rating: 4, comment: 'Great location, but finding a spot on floor 3 was tricky.', date: '2026-09-22', category: 'Accessibility' },
-  { id: 'rv3', facilityId: 'f3', facilityName: 'SoMa Premium Parking', userId: 'u11', userName: 'Mike T.', rating: 5, comment: 'Valet service is top notch. Worth the premium price.', date: '2026-09-24', category: 'Service' },
-  { id: 'rv4', facilityId: 'f2', facilityName: 'Mission Bay Lot', userId: 'u12', userName: 'Jenny L.', rating: 3, comment: 'Open air lot, got a bit wet during rain. Otherwise fine.', date: '2026-09-20', category: 'Facility' },
-  { id: 'rv5', facilityId: 'f5', facilityName: 'Bayview EV Hub', userId: 'u13', userName: 'Carlos R.', rating: 5, comment: 'Best EV charging rates in the city. Super convenient.', date: '2026-09-26', category: 'EV Charging' },
-];
-
 export const complaints: Complaint[] = [
   { id: 'c1', facilityId: 'f1', facilityName: 'Downtown Central Garage', userId: 'u10', userName: 'Sarah K.', subject: 'Overcharged for parking', description: 'I was charged for 5 hours but only parked for 3.', category: 'Billing', status: 'assigned', createdAt: '2026-09-26', assignedTo: 'Jamie Chen' },
   { id: 'c2', facilityId: 'f2', facilityName: 'Mission Bay Lot', userId: 'u12', userName: 'Jenny L.', subject: 'Poor lighting at night', description: 'The lot was very dark and felt unsafe at 10 PM.', category: 'Safety', status: 'open', createdAt: '2026-09-24' },
   { id: 'c3', facilityId: 'f3', facilityName: 'SoMa Premium Parking', userId: 'u11', userName: 'Mike T.', subject: 'Valet was slow', description: 'Waited 20 minutes for valet to bring my car.', category: 'Service', status: 'resolved', createdAt: '2026-09-22', assignedTo: 'Diana Ruiz', resolution: 'Valet staffing increased during peak hours. Customer offered discount.' },
   { id: 'c4', facilityId: 'f5', facilityName: 'Bayview EV Hub', userId: 'u13', userName: 'Carlos R.', subject: 'EV charger not working', description: 'Charger #3 was out of order.', category: 'Equipment', status: 'in_progress', createdAt: '2026-09-27', assignedTo: 'Lisa Wong' },
-];
-
-export const notifications: Notification[] = [
-  { id: 'n1', userId: 'u1', type: 'reminder', title: 'Reservation Reminder', message: 'Your reservation at Mission Bay Lot starts in 2 days.', date: '2026-09-28T08:00', read: false },
-  { id: 'n2', userId: 'u1', type: 'expiry', title: 'Session Expiring Soon', message: 'Your parking session at Downtown Central Garage expires in 2 hours.', date: '2026-09-28T12:00', read: false },
-  { id: 'n3', userId: 'u1', type: 'payment', title: 'Payment Receipt', message: 'Your payment of $45.00 for SoMa Premium Parking was processed.', date: '2026-09-25T17:10', read: true },
-  { id: 'n4', userId: 'u1', type: 'cancellation', title: 'Reservation Cancelled', message: 'Your reservation at Bayview EV Hub was cancelled. Refund processed.', date: '2026-09-20T10:00', read: true },
-  { id: 'n5', userId: 'u1', type: 'review', title: 'Leave a Review', message: 'How was your experience at Embarcadero Garage? Leave a review.', date: '2026-09-15T18:15', read: true },
-];
-
-export const evChargers: EVCharger[] = [
-  { id: 'ev1', facilityId: 'f1', label: 'EV-01', power: 50, pricePerKwh: 0.35, status: 'available' },
-  { id: 'ev2', facilityId: 'f1', label: 'EV-02', power: 50, pricePerKwh: 0.35, status: 'in_use' },
-  { id: 'ev3', facilityId: 'f1', label: 'EV-03', power: 150, pricePerKwh: 0.45, status: 'available' },
-  { id: 'ev4', facilityId: 'f3', label: 'EV-01', power: 100, pricePerKwh: 0.40, status: 'in_use' },
-  { id: 'ev5', facilityId: 'f5', label: 'EV-01', power: 150, pricePerKwh: 0.38, status: 'available' },
-  { id: 'ev6', facilityId: 'f5', label: 'EV-02', power: 150, pricePerKwh: 0.38, status: 'available' },
-  { id: 'ev7', facilityId: 'f5', label: 'EV-03', power: 50, pricePerKwh: 0.35, status: 'maintenance' },
-  { id: 'ev8', facilityId: 'f2', label: 'EV-01', power: 50, pricePerKwh: 0.30, status: 'available' },
 ];
 
 export const pricingRules: PricingRule[] = [

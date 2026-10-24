@@ -12,10 +12,13 @@ import {
   facilityHoursAreValid,
   fetchFacilities,
   rateIsValid,
+  ratingIsValid,
   removeFacility,
+  reviewCountIsValid,
   updateFacility,
 } from '@/lib/facilities';
 import { DEFAULT_CENTER, reverseGeocode } from '@/lib/geo';
+import { formatMoney, formatRate } from '@/lib/format';
 import type { Amenity, Facility, FacilityStatus, FacilityUpdateInput } from '@/types';
 import {
   AlertCircle, Building2, Check, Clock, Edit, Loader2, MapPin, Plus, Power, RefreshCw, Trash2,
@@ -37,6 +40,8 @@ interface FormState {
   amenities: Amenity[];
   hourlyRate: string;
   dailyMax: string;
+  rating: string;
+  reviewCount: string;
 }
 
 const EMPTY_FORM: FormState = {
@@ -52,6 +57,8 @@ const EMPTY_FORM: FormState = {
   amenities: [],
   hourlyRate: '',
   dailyMax: '',
+  rating: '',
+  reviewCount: '',
 };
 
 /** Turns a facility API failure into something worth showing the user. */
@@ -177,6 +184,11 @@ export function OperatorFacilities() {
         facility.dailyMax === null || facility.dailyMax === undefined
           ? ''
           : String(facility.dailyMax),
+      rating: facility.rating === null || facility.rating === undefined ? '' : String(facility.rating),
+      reviewCount:
+        facility.reviewCount === null || facility.reviewCount === undefined
+          ? ''
+          : String(facility.reviewCount),
     });
     setFormError('');
     setNotice('');
@@ -261,6 +273,12 @@ export function OperatorFacilities() {
     }
     if (!rateIsValid(form.hourlyRate) || !rateIsValid(form.dailyMax)) {
       return { values: null, error: 'Rates must be numbers greater than 0 and at most 10000.' };
+    }
+    if (!ratingIsValid(form.rating)) {
+      return { values: null, error: 'Rating must be a number between 0 and 5.' };
+    }
+    if (!reviewCountIsValid(form.reviewCount)) {
+      return { values: null, error: 'Review count must be a whole number of 0 or more.' };
     }
 
     return { values: parseForm(form, { name, address, city, description, lat, lng }), error: '' };
@@ -448,13 +466,22 @@ export function OperatorFacilities() {
                 {(f.hourlyRate !== null && f.hourlyRate !== undefined) && (
                   <div>
                     <p className="text-xs text-[#8a98b5] mb-0.5">Hourly rate</p>
-                    <p className="font-semibold">${f.hourlyRate}</p>
+                    <p className="font-semibold">{formatRate(f.hourlyRate)}</p>
                   </div>
                 )}
                 {(f.dailyMax !== null && f.dailyMax !== undefined) && (
                   <div>
                     <p className="text-xs text-[#8a98b5] mb-0.5">Daily max</p>
-                    <p className="font-semibold">${f.dailyMax}</p>
+                    <p className="font-semibold">{formatMoney(f.dailyMax)}</p>
+                  </div>
+                )}
+                {(f.rating !== null && f.rating !== undefined) && (
+                  <div>
+                    <p className="text-xs text-[#8a98b5] mb-0.5">Rating</p>
+                    <p className="font-semibold">
+                      {f.rating.toFixed(1)}
+                      {f.reviewCount ? ` (${f.reviewCount})` : ''}
+                    </p>
                   </div>
                 )}
               </div>
@@ -661,7 +688,6 @@ export function OperatorFacilities() {
               Open 24 hours
             </label>
           </div>
-
           {!form.open24h && (
             <div className="grid grid-cols-2 gap-3">
               <div>
@@ -705,6 +731,48 @@ export function OperatorFacilities() {
                 </button>
               ))}
             </div>
+          </div>
+
+          <div>
+            <p className="text-xs text-[#8a98b5] font-medium mb-1.5">Rating</p>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label htmlFor="facility-rating" className="text-xs text-[#5a6a8a] mb-1.5 block">
+                  Average score (0-5)
+                </label>
+                <input
+                  id="facility-rating"
+                  type="number"
+                  step="0.1"
+                  min={0}
+                  max={5}
+                  value={form.rating}
+                  onChange={(e) => setForm({ ...form, rating: e.target.value })}
+                  placeholder="Optional"
+                  className="pe-input"
+                  autoComplete="off"
+                />
+              </div>
+              <div>
+                <label htmlFor="facility-review-count" className="text-xs text-[#5a6a8a] mb-1.5 block">
+                  Number of ratings
+                </label>
+                <input
+                  id="facility-review-count"
+                  type="number"
+                  step="1"
+                  min={0}
+                  value={form.reviewCount}
+                  onChange={(e) => setForm({ ...form, reviewCount: e.target.value })}
+                  placeholder="Optional"
+                  className="pe-input"
+                  autoComplete="off"
+                />
+              </div>
+            </div>
+            <p className="text-xs text-[#5a6a8a] mt-1.5">
+              Drivers see these as stars. Leave them empty and the facility shows as not rated yet.
+            </p>
           </div>
 
           <div>
@@ -899,6 +967,8 @@ function parseForm(
         : { openingTime: form.openingTime, closingTime: form.closingTime }),
       ...(form.hourlyRate === '' ? {} : { hourlyRate: Number(form.hourlyRate) }),
       ...(form.dailyMax === '' ? {} : { dailyMax: Number(form.dailyMax) }),
+      ...(form.rating === '' ? {} : { rating: Number(form.rating) }),
+      ...(form.reviewCount === '' ? {} : { reviewCount: Number(form.reviewCount) }),
     },
     update: {
       ...common,
@@ -908,6 +978,8 @@ function parseForm(
       closingTime: form.open24h ? null : form.closingTime,
       hourlyRate: form.hourlyRate === '' ? null : Number(form.hourlyRate),
       dailyMax: form.dailyMax === '' ? null : Number(form.dailyMax),
+      rating: form.rating === '' ? null : Number(form.rating),
+      reviewCount: form.reviewCount === '' ? null : Number(form.reviewCount),
     },
   };
 }

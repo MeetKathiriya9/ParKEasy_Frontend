@@ -126,6 +126,26 @@ export function rateIsValid(value: string): boolean {
 }
 
 /**
+ * Matches the server's rating bounds: a number in [0, 5]. An empty field is
+ * valid and means "leave the rating alone".
+ */
+export function ratingIsValid(value: string): boolean {
+  if (value.trim() === '') return true;
+  const n = Number(value);
+  return Number.isFinite(n) && n >= 0 && n <= 5;
+}
+
+/**
+ * Matches the server's review-count bounds: a whole number from 0 up. An
+ * empty field is valid and means "leave the count alone".
+ */
+export function reviewCountIsValid(value: string): boolean {
+  if (value.trim() === '') return true;
+  const n = Number(value);
+  return Number.isInteger(n) && n >= 0 && n <= 10_000_000;
+}
+
+/**
  * Collapses runs of whitespace the way the server does, so validation of
  * name/address happens before the round trip.
  */

@@ -48,7 +48,7 @@ export function StaffSpaces() {
   const [busy, setBusy] = useState(false);
   const [statusFor, setStatusFor] = useState<Space | null>(null);
   const [statusForm, setStatusForm] = useState<{ status: SpaceStatus; reason: string }>({
-    status: 'available',
+    status: 'AVAILABLE',
     reason: '',
   });
   const [dialogError, setDialogError] = useState('');
@@ -110,7 +110,12 @@ export function StaffSpaces() {
       maintenance: 0,
       blocked: 0,
     };
-    for (const space of spaces) tally[space.status] += 1;
+    // The tally is keyed like `SpaceCounts` (lowercase) while a space's status
+    // is uppercase on the wire, so the key is folded down here.
+    for (const space of spaces) {
+      const key = space.status.toLowerCase() as keyof typeof tally;
+      tally[key] += 1;
+    }
     return tally;
   }, [spaces]);
 
@@ -125,11 +130,11 @@ export function StaffSpaces() {
   }, [spaces]);
 
   const tileClass: Record<SpaceStatus, string> = {
-    available: 'bg-[#10b981]/20 border-[#10b981] text-[#10b981]',
-    occupied: 'bg-[#ef4444]/20 border-[#ef4444] text-[#ef4444]',
-    reserved: 'bg-[#f59e0b]/20 border-[#f59e0b] text-[#f59e0b]',
-    maintenance: 'bg-[#06b6d4]/20 border-[#06b6d4] text-[#06b6d4]',
-    blocked: 'bg-[#2a3a5c] border-[#3a4a6c] text-[#8a98b5]',
+    AVAILABLE: 'bg-[#10b981]/20 border-[#10b981] text-[#10b981]',
+    OCCUPIED: 'bg-[#ef4444]/20 border-[#ef4444] text-[#ef4444]',
+    RESERVED: 'bg-[#f59e0b]/20 border-[#f59e0b] text-[#f59e0b]',
+    MAINTENANCE: 'bg-[#06b6d4]/20 border-[#06b6d4] text-[#06b6d4]',
+    BLOCKED: 'bg-[#2a3a5c] border-[#3a4a6c] text-[#8a98b5]',
   };
 
   const openStatus = (space: Space) => {

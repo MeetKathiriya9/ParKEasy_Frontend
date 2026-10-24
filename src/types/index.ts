@@ -91,6 +91,13 @@ export interface Facility {
   isOpenNow: boolean;
   hourlyRate?: number | null;
   dailyMax?: number | null;
+  /**
+   * Standing on the five-point scale, or null when the facility has not been
+   * rated yet. Written by an operator until the reviews group exists.
+   */
+  rating?: number | null;
+  /** How many ratings the average above is drawn from. */
+  reviewCount?: number | null;
   status: FacilityStatus;
   createdAt?: string | null;
   updatedAt?: string | null;
@@ -110,6 +117,9 @@ export interface FacilityCreateInput {
   description?: string;
   hourlyRate?: number;
   dailyMax?: number;
+  /** 0-5; leave it out and the server stores no rating. */
+  rating?: number;
+  reviewCount?: number;
 }
 
 /** Body of `PATCH /facilities/{id}`: send only what changed; null clears. */
@@ -126,6 +136,8 @@ export interface FacilityUpdateInput {
   amenities?: Amenity[];
   hourlyRate?: number | null;
   dailyMax?: number | null;
+  rating?: number | null;
+  reviewCount?: number | null;
 }
 
 /** Body of `PATCH /facilities/{id}/status`. `status` is not part of PATCH. */
@@ -134,8 +146,14 @@ export interface FacilityStatusInput {
   reason?: string;
 }
 
-/** DOC section 18 space statuses. `occupied`/`reserved` belong to the engine. */
-export type SpaceStatus = 'available' | 'occupied' | 'reserved' | 'maintenance' | 'blocked';
+/**
+ * DOC section 18 space statuses, uppercase on the wire.
+ *
+ * The server stores and returns the uppercase spelling (`app/models/enums.py`),
+ * so the client uses it verbatim rather than mapping between the two.
+ * `OCCUPIED` and `RESERVED` belong to the reservation engine.
+ */
+export type SpaceStatus = 'AVAILABLE' | 'OCCUPIED' | 'RESERVED' | 'MAINTENANCE' | 'BLOCKED';
 
 /** DOC section 18 space types, lowercase on the wire. */
 export type SpaceType = 'standard' | 'compact' | 'large' | 'ev' | 'accessible';
@@ -233,17 +251,73 @@ export interface BulkSpacesInput {
 }
 
 /**
- * Mock-only space row for the driver discovery view (`DriverFacility.tsx`),
- * which has no live `/parking` backend yet. The real wire shape is `Space`.
+ * DOC section 22: how a nearby search may be ordered. The server falls back to
+ * `distance` for anything it does not recognise.
  */
-export interface ParkingSpace {
-  id: string;
+export type ParkingSortBy = 'distance' | 'price' | 'availability' | 'rating';
+
+/**
+ * Query for `GET /parking/nearby`.
+ *
+ * The centre is always a point: "near me", a typed address and a dropped map
+ * pin are all resolved to `lat`/`lng` in the browser before the request goes
+ * out, so the server never has to guess which city a free-text query meant.
+ */
+export interface ParkingSearchParams {
+  lat: number;
+  lng: number;
+  /** How far to look, in kilometres. */
+  radiusKm?: number;
+  /** Only facilities with at least this many free spaces. */
+  minAvailable?: number;
+  /** Maximum hourly rate. Facilities with no published rate are excluded. */
+  maxPrice?: number;
+  ev?: boolean;
+  covered?: boolean;
+  accessible?: boolean;
+  openNow?: boolean;
+  /** Only facilities with an *available* space of this type. */
+  spaceType?: SpaceType;
+  sort?: ParkingSortBy;
+  page?: number;
+  limit?: number;
+}
+
+/** One facility in a nearby-search result. */
+export interface ParkingSearchResult extends Facility {
+  /** Measured server-side by the `2dsphere` index; null if it cannot be. */
+  distanceMeters: number | null;
+  /** When the availability numbers were read. */
+  availabilityAsOf?: string | null;
+  /** The kinds of space this facility holds. */
+  spaceTypes: SpaceType[];
+}
+
+/** `GET /parking/{id}/availability` - the per-status space tally. */
+export interface ParkingAvailability {
   facilityId: string;
-  floor: string;
-  zone: string;
-  label: string;
-  type: SpaceType;
-  status: SpaceStatus;
+  spaceCounts: SpaceCounts;
+  availabilityAsOf?: string | null;
+}
+
+/** `GET /parking/{id}/spaces` - the facility's spaces, for the layout grid. */
+export interface ParkingSpaces {
+  facilityId: string;
+  spaces: Space[];
+  availabilityAsOf?: string | null;
+}
+
+/** The envelope every paged list route answers with. */
+export interface PageMeta {
+  page: number;
+  limit: number;
+  total: number;
+  pages: number;
+}
+
+export interface Paginated<T> {
+  items: T[];
+  meta: PageMeta;
 }
 
 export interface ParkingFacility {
