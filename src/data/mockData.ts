@@ -1,6 +1,6 @@
 ﻿import type {
   User, ParkingFacility, Reservation,
-  Violation, StaffMember, Complaint,
+  Violation, Complaint,
   PricingRule, EventParking, AuditLog,
   PlatformUser, Report,
 } from '@/types';
@@ -122,14 +122,6 @@ export const violations: Violation[] = [
     vehiclePlate: 'GHJ-1192', type: 'reserved_misuse', description: 'Non-reservation vehicle in reserved spot B-03.',
     recordedBy: 'Jamie Chen', recordedAt: '2026-09-25T11:20', status: 'appealed', fine: 20, evidence: 'Photo of reserved sign and vehicle.',
   },
-];
-
-export const staffMembers: StaffMember[] = [
-  { id: 'st1', name: 'Jamie Chen', email: 'jamie@email.com', phone: '555-0201', facilityId: 'f1', facilityName: 'Downtown Central Garage', role: 'Senior Attendant', active: true, scansToday: 47, violationsLogged: 2, lastActive: '2026-09-28T09:45' },
-  { id: 'st2', name: 'Marcus Lee', email: 'marcus@email.com', phone: '555-0202', facilityId: 'f1', facilityName: 'Downtown Central Garage', role: 'Attendant', active: true, scansToday: 31, violationsLogged: 0, lastActive: '2026-09-28T09:30' },
-  { id: 'st3', name: 'Diana Ruiz', email: 'diana@email.com', phone: '555-0203', facilityId: 'f3', facilityName: 'SoMa Premium Parking', role: 'Senior Attendant', active: true, scansToday: 52, violationsLogged: 1, lastActive: '2026-09-28T09:50' },
-  { id: 'st4', name: 'Tom Park', email: 'tom@email.com', phone: '555-0204', facilityId: 'f2', facilityName: 'Mission Bay Lot', role: 'Attendant', active: false, scansToday: 0, violationsLogged: 0, lastActive: '2026-09-27T18:00' },
-  { id: 'st5', name: 'Lisa Wong', email: 'lisa@email.com', phone: '555-0205', facilityId: 'f5', facilityName: 'Bayview EV Hub', role: 'Attendant', active: true, scansToday: 28, violationsLogged: 1, lastActive: '2026-09-28T09:15' },
 ];
 
 export const complaints: Complaint[] = [

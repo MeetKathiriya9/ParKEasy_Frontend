@@ -17,14 +17,16 @@ import { DriverNotifications } from '@/pages/driver/DriverNotifications';
 import { DriverReviews, DriverComplaints } from '@/pages/driver/DriverReviews';
 import { StaffDashboard } from '@/pages/staff/StaffDashboard';
 import { StaffScanner } from '@/pages/staff/StaffScanner';
+import { StaffReservations } from '@/pages/staff/StaffReservations';
 import { StaffViolations } from '@/pages/staff/StaffViolations';
 import { StaffSpaces } from '@/pages/staff/StaffSpaces';
 import { StaffSessions, StaffActivity } from '@/pages/staff/StaffPages';
 import { OperatorDashboard } from '@/pages/operator/OperatorDashboard';
 import { OperatorFacilities } from '@/pages/operator/OperatorFacilities';
 import { OperatorSpaces } from '@/pages/operator/OperatorSpaces';
+import { OperatorStaff } from '@/pages/operator/OperatorStaff';
 import {
-  OperatorPricing, OperatorStaff, OperatorReservations,
+  OperatorPricing, OperatorReservations,
   OperatorAnalytics, OperatorEvents, OperatorComplaints, OperatorViolations,
 } from '@/pages/operator/OperatorPages';
 import {
@@ -90,6 +92,7 @@ function Router() {
     'driver-reviews': <DriverReviews />,
     'driver-complaints': <DriverComplaints />,
     'staff-dashboard': <StaffDashboard />,
+    'staff-reservations': <StaffReservations />,
     'staff-scanner': <StaffScanner />,
     'staff-sessions': <StaffSessions />,
     'staff-violations': <StaffViolations />,

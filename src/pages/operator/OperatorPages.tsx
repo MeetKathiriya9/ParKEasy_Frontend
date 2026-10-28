@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { SectionHeader, Badge, Modal } from '@/components/ui';
-import { facilities, pricingRules, staffMembers, reservations, violations, complaints, reports, eventParkings, weeklyRevenue, hourlyOccupancy } from '@/data/mockData';
+import { facilities, pricingRules, reservations, violations, complaints, reports, eventParkings, weeklyRevenue, hourlyOccupancy } from '@/data/mockData';
 import { Plus, DollarSign, Users, CalendarCheck, AlertTriangle, TrendingUp, BarChart3, CalendarDays, Download } from 'lucide-react';
 import { StatCard, MiniBarChart, MiniLineChart } from '@/components/ui';
 
@@ -82,51 +82,6 @@ export function OperatorPricing() {
           <button onClick={() => setShowAdd(false)} className="pe-btn-primary w-full">Add Rule</button>
         </div>
       </Modal>
-    </div>
-  );
-}
-
-export function OperatorStaff() {
-  return (
-    <div>
-      <SectionHeader title="Staff Management" subtitle="Manage staff accounts and assignments" action={<button className="pe-btn-primary"><Plus size={16} /> Add Staff</button>} />
-
-      <div className="pe-card overflow-hidden">
-        <table className="w-full">
-          <thead>
-            <tr className="border-b border-[#1e2d4d] text-xs text-[#8a98b5] uppercase">
-              <th className="text-left p-3 font-medium">Name</th>
-              <th className="text-left p-3 font-medium">Facility</th>
-              <th className="text-left p-3 font-medium">Role</th>
-              <th className="text-left p-3 font-medium">Scans Today</th>
-              <th className="text-left p-3 font-medium">Violations</th>
-              <th className="text-left p-3 font-medium">Status</th>
-            </tr>
-          </thead>
-          <tbody>
-            {staffMembers.map(s => (
-              <tr key={s.id} className="border-b border-[#1e2d4d] last:border-0 text-sm">
-                <td className="p-3">
-                  <div className="flex items-center gap-2">
-                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#2563eb] to-[#06b6d4] flex items-center justify-center text-white text-xs font-bold">
-                      {s.name.split(' ').map(n => n[0]).join('')}
-                    </div>
-                    <div>
-                      <p className="font-medium">{s.name}</p>
-                      <p className="text-xs text-[#5a6a8a]">{s.email}</p>
-                    </div>
-                  </div>
-                </td>
-                <td className="p-3 text-[#8a98b5]">{s.facilityName}</td>
-                <td className="p-3">{s.role}</td>
-                <td className="p-3">{s.scansToday}</td>
-                <td className="p-3">{s.violationsLogged}</td>
-                <td className="p-3">{s.active ? <Badge color="green">Active</Badge> : <Badge color="gray">Off Duty</Badge>}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
     </div>
   );
 }

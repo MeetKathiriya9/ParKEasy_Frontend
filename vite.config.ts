@@ -20,6 +20,7 @@ export default defineConfig(({ mode }) => {
       exclude: ['lucide-react'],
     },
     server: {
+      host: '0.0.0.0',
       port: 5173,
       // Proxying keeps the browser on one origin in development, so CORS never
       // gets in the way. The backend still allows the Vite origins for direct

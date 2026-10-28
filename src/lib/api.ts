@@ -56,6 +56,23 @@ export type ApiErrorCode =
   | 'ZONE_LIMIT_REACHED'
   | 'SPACE_LIMIT_REACHED'
   | 'SPACE_DUPLICATE'
+  | 'ASSIGNMENT_EXISTS'
+  | 'ASSIGNMENT_NOT_FOUND'
+  | 'STAFF_NOT_ACTIVE'
+  | 'STAFF_LIMIT_REACHED'
+  | 'OPERATOR_MISMATCH'
+  | 'FACILITY_NOT_ACCEPTING'
+  | 'SPACE_NOT_AVAILABLE'
+  | 'SPACE_ALREADY_BOOKED'
+  | 'NO_SPACE_AVAILABLE'
+  | 'SPACE_IN_USE'
+  | 'RESERVATION_NOT_CANCELLABLE'
+  | 'RESERVATION_TOO_EARLY'
+  | 'RESERVATION_EXPIRED'
+  | 'RESERVATION_ALREADY_ACTIVE'
+  | 'RESERVATION_NOT_ACTIVE'
+  | 'SESSION_ALREADY_CLOSED'
+  | 'SESSION_NOT_ACTIVE'
   | 'APP_ERROR';
 
 /**
@@ -75,6 +92,8 @@ const SESSION_DEAD_CODES: ReadonlySet<string> = new Set<ApiErrorCode>([
   'INVALID_TOKEN', // garbage, malformed or expired token
   'TOKEN_REVOKED', // explicitly signed out
   'PASSWORD_CHANGED', // invalidated by a password reset or change
+  'ACCOUNT_SUSPENDED', // suspended mid-session; the next request is a 401
+  'ACCOUNT_PENDING', // approval withdrawn mid-session
 ]);
 
 /** Normalised failure thrown by every request, so callers never read Axios internals. */

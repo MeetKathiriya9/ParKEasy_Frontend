@@ -4,9 +4,10 @@ import { StatCard, SectionHeader, Badge } from '@/components/ui';
 import { StarRating } from '@/components/StarRating';
 import { fetchVehicles } from '@/lib/vehicles';
 import { searchNearbyParking } from '@/lib/parking';
+import { fetchActiveSession, fetchReservations } from '@/lib/reservations';
 import { DEFAULT_CENTER } from '@/lib/geo';
-import { formatDistance, formatRate } from '@/lib/format';
-import type { ParkingSearchResult, Vehicle } from '@/types';
+import { formatDateTime, formatDistance, formatDuration, formatRate } from '@/lib/format';
+import type { ParkingSearchResult, SessionRecord, Vehicle } from '@/types';
 import { Clock, MapPin, Car, CalendarCheck, Zap, TrendingUp, Navigation, Loader2 } from 'lucide-react';
 
 export function DriverDashboard() {
@@ -18,6 +19,8 @@ export function DriverDashboard() {
   const [nearby, setNearby] = useState<ParkingSearchResult[]>([]);
   const [nearbyLoading, setNearbyLoading] = useState(true);
   const [nearbyError, setNearbyError] = useState('');
+  const [activeSession, setActiveSession] = useState<SessionRecord | null>(null);
+  const [upcomingCount, setUpcomingCount] = useState(0);
 
   // Vehicle counts are secondary here, so a failed read stays at zero rather
   // than replacing the whole dashboard with an error state.
@@ -29,6 +32,29 @@ export function DriverDashboard() {
         if (!cancelled) setUserVehicles(list);
       } catch {
         // Ignored: the vehicles page surfaces the failure.
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  // Parking state is secondary here too: a failed read leaves the honest
+  // "no active session" state rather than replacing the whole dashboard.
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const [session, upcoming] = await Promise.all([
+          fetchActiveSession(),
+          fetchReservations({ status: 'CONFIRMED', limit: 100, order: 'asc' }),
+        ]);
+        if (!cancelled) {
+          setActiveSession(session);
+          setUpcomingCount(upcoming.meta.total);
+        }
+      } catch {
+        // Ignored: the session and reservations pages surface failures.
       }
     })();
     return () => {
@@ -95,8 +121,8 @@ export function DriverDashboard() {
       />
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-        <StatCard icon={<CalendarCheck size={20} />} label="Active Session" value="0" accent="green" />
-        <StatCard icon={<Clock size={20} />} label="Upcoming" value="0" accent="blue" />
+        <StatCard icon={<CalendarCheck size={20} />} label="Active Session" value={activeSession ? '1' : '0'} accent="green" />
+        <StatCard icon={<Clock size={20} />} label="Upcoming" value={String(upcomingCount)} accent="blue" />
         <StatCard icon={<Car size={20} />} label="Vehicles" value={String(userVehicles.length)} accent="cyan" />
         <StatCard icon={<Zap size={20} />} label="Unread Alerts" value="0" accent="amber" />
       </div>
@@ -107,14 +133,41 @@ export function DriverDashboard() {
           <div className="flex items-center justify-between mb-4">
             <h2 className="font-semibold text-lg">Active Parking Session</h2>
           </div>
-          <div className="text-center py-8">
-            <Clock size={32} className="mx-auto text-[#5a6a8a] mb-2" />
-            <p className="text-[#8a98b5] mb-1">No active parking session</p>
-            <p className="text-xs text-[#5a6a8a] mb-4">
-              Sessions appear here once reservations open.
-            </p>
-            <button onClick={() => navigate('driver-search')} className="pe-btn-primary">Find Parking</button>
-          </div>
+          {activeSession ? (
+            <div className="py-4">
+              <div className="flex items-start justify-between gap-3 mb-4">
+                <div>
+                  <p className="font-semibold text-lg">{activeSession.facilityName}</p>
+                  <p className="text-sm text-[#8a98b5] flex items-center gap-1.5 mt-1">
+                    <MapPin size={14} /> Space {activeSession.spaceNumber} · {activeSession.vehiclePlate}
+                  </p>
+                </div>
+                <Badge color="green">Parked</Badge>
+              </div>
+              <div className="grid grid-cols-2 gap-3 mb-4">
+                <div className="bg-[#0b1220] rounded-lg p-3">
+                  <p className="text-xs text-[#8a98b5]">Entered</p>
+                  <p className="text-sm font-semibold mt-1">{formatDateTime(activeSession.entryTime)}</p>
+                </div>
+                <div className="bg-[#0b1220] rounded-lg p-3">
+                  <p className="text-xs text-[#8a98b5]">Recorded</p>
+                  <p className="text-sm font-semibold mt-1">{formatDuration(activeSession.durationMinutes)}</p>
+                </div>
+              </div>
+              <button onClick={() => navigate('driver-session')} className="pe-btn-primary w-full">
+                View active session
+              </button>
+            </div>
+          ) : (
+            <div className="text-center py-8">
+              <Clock size={32} className="mx-auto text-[#5a6a8a] mb-2" />
+              <p className="text-[#8a98b5] mb-1">No active parking session</p>
+              <p className="text-xs text-[#5a6a8a] mb-4">
+                A session begins when staff check in your reservation.
+              </p>
+              <button onClick={() => navigate('driver-search')} className="pe-btn-primary">Find Parking</button>
+            </div>
+          )}
         </div>
 
         {/* Quick Actions */}
@@ -145,7 +198,7 @@ export function DriverDashboard() {
               </div>
               <div>
                 <p className="text-sm font-medium">My Reservations</p>
-                <p className="text-xs text-[#8a98b5]">Not open yet</p>
+                <p className="text-xs text-[#8a98b5]">{upcomingCount} upcoming</p>
               </div>
             </button>
           </div>

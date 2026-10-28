@@ -3,9 +3,9 @@ import { useApp, type Page } from '@/context/AppContext';
 import type { Role } from '@/types';
 import {
   LayoutDashboard, Search, CalendarCheck, Clock, History, Car, Bell,
-  Star, MessageSquare, QrCode, ScanLine, AlertTriangle, ParkingSquare,
+  Star, MessageSquare, ScanLine, AlertTriangle, ParkingSquare,
   Building2, DollarSign, Users, BarChart3, CalendarDays, Settings,
-  FileText, Shield, LogOut, Menu, X, Zap, KeyRound, ChevronDown, UserRound,
+  FileText, LogOut, Menu, X, Zap, KeyRound, ChevronDown, UserRound,
 } from 'lucide-react';
 import { Avatar } from '@/components/ui';
 
@@ -46,6 +46,7 @@ const navConfig: Record<Role, { groups: { title: string; items: NavItem[] }[] }>
         title: 'Operations',
         items: [
           { page: 'staff-dashboard', label: 'Dashboard', icon: <LayoutDashboard size={18} /> },
+          { page: 'staff-reservations', label: "Today's Arrivals", icon: <CalendarCheck size={18} /> },
           { page: 'staff-scanner', label: 'QR Scanner', icon: <ScanLine size={18} /> },
           { page: 'staff-sessions', label: 'Active Sessions', icon: <Clock size={18} /> },
           { page: 'staff-violations', label: 'Violations', icon: <AlertTriangle size={18} /> },
@@ -119,7 +120,6 @@ export function AppLayout({ children }: { children: ReactNode }) {
   const { currentUser, currentPage, navigate, logout } = useApp();
   const role = currentUser?.role ?? 'driver';
   const config = navConfig[role];
-  const [mobileNavOpen, setMobileNavOpen] = useState(false);
 
   return (
     <div className="flex h-screen overflow-hidden bg-[#0b1220]">

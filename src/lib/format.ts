@@ -63,3 +63,24 @@ export function formatFreshness(iso: string | null | undefined): string {
   if (hours < 24) return `${hours} h ago`;
   return new Date(then).toLocaleDateString();
 }
+
+/** A booking or session timestamp in the browser's local time. */
+export function formatDateTime(iso: string | null | undefined): string {
+  if (!iso) return '-';
+  const value = Date.parse(iso);
+  if (Number.isNaN(value)) return '-';
+  return new Date(value).toLocaleString(undefined, {
+    dateStyle: 'medium',
+    timeStyle: 'short',
+  });
+}
+
+/** A duration in minutes as `2 h 30 min`, `45 min` or `-`. */
+export function formatDuration(minutes: number | null | undefined): string {
+  if (minutes === null || minutes === undefined || !Number.isFinite(minutes)) return '-';
+  const whole = Math.max(0, Math.round(minutes));
+  if (whole < 60) return `${whole} min`;
+  const hours = Math.floor(whole / 60);
+  const rest = whole % 60;
+  return rest === 0 ? `${hours} h` : `${hours} h ${rest} min`;
+}

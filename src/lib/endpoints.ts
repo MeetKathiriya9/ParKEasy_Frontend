@@ -50,6 +50,18 @@ export const endpoints = {
     updateStatus: (id: string) => `${API_PREFIX}/facilities/${id}/status`,
   },
 
+  // --- Staff accounts and facility assignments ---
+  staff: {
+    list: `${API_PREFIX}/staff`,
+    create: `${API_PREFIX}/staff`,
+    detail: (id: string) => `${API_PREFIX}/staff/${id}`,
+    update: (id: string) => `${API_PREFIX}/staff/${id}`,
+    updateStatus: (id: string) => `${API_PREFIX}/staff/${id}/status`,
+    assignments: (id: string) => `${API_PREFIX}/staff/${id}/assignments`,
+    assignment: (id: string, assignmentId: string) =>
+      `${API_PREFIX}/staff/${id}/assignments/${assignmentId}`,
+  },
+
   // --- Parking space management: Facility -> Floor -> Zone -> Space ---
   spaces: {
     /** The layout tree: floors with their zones nested, for a facility. */
@@ -83,14 +95,17 @@ export const endpoints = {
   reservations: {
     list: `${API_PREFIX}/reservations`,
     create: `${API_PREFIX}/reservations`,
+    availability: `${API_PREFIX}/reservations/availability`,
+    lookup: `${API_PREFIX}/reservations/lookup`,
     detail: (id: string) => `${API_PREFIX}/reservations/${id}`,
     cancel: (id: string) => `${API_PREFIX}/reservations/${id}/cancel`,
     checkIn: (id: string) => `${API_PREFIX}/reservations/${id}/check-in`,
     checkOut: (id: string) => `${API_PREFIX}/reservations/${id}/check-out`,
-    receipt: (id: string) => `${API_PREFIX}/reservations/${id}/receipt`,
   },
   sessions: {
     active: `${API_PREFIX}/sessions/active`,
+    list: `${API_PREFIX}/sessions`,
+    detail: (id: string) => `${API_PREFIX}/sessions/${id}`,
     extend: (id: string) => `${API_PREFIX}/sessions/${id}/extend`,
     close: (id: string) => `${API_PREFIX}/sessions/${id}/close`,
   },

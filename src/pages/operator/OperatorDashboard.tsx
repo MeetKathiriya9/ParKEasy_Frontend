@@ -1,13 +1,11 @@
-import { useApp } from '@/context/AppContext';
-import { StatCard, SectionHeader, Badge, ProgressBar, MiniBarChart, MiniLineChart } from '@/components/ui';
-import { facilities, reports, weeklyRevenue, hourlyOccupancy, reservations, violations, complaints } from '@/data/mockData';
-import { DollarSign, Building2, CalendarCheck, AlertTriangle, TrendingUp, Users, BarChart3, Car } from 'lucide-react';
+import { StatCard, SectionHeader, ProgressBar, MiniBarChart, MiniLineChart } from '@/components/ui';
+import { facilities, reports, weeklyRevenue, hourlyOccupancy } from '@/data/mockData';
+import { DollarSign, Building2, CalendarCheck, AlertTriangle, TrendingUp, BarChart3 } from 'lucide-react';
 
 export function OperatorDashboard() {
   const totalRevenue = reports.reduce((s, r) => s + r.revenue, 0);
   const totalReservations = reports.reduce((s, r) => s + r.reservations, 0);
   const totalViolations = reports.reduce((s, r) => s + r.violations, 0);
-  const avgOccupancy = reports.reduce((s, r) => s + r.occupancyRate, 0) / reports.length;
 
   return (
     <div>

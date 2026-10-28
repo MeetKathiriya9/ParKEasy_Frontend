@@ -13,6 +13,8 @@ export interface AuthUser {
   role: Role;
   status: UserStatus;
   facilityIds: string[];
+  /** Set for `staff` only: the operator account that owns the member. */
+  operatorId: string | null;
   /** Compressed avatar URL from the server, or null to fall back to initials. */
   photoUrl: string | null;
   createdAt: string | null;

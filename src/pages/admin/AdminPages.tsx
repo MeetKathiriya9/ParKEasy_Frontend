@@ -1,4 +1,3 @@
-import { useApp } from '@/context/AppContext';
 import { StatCard, SectionHeader, Badge, ProgressBar, MiniBarChart, Modal } from '@/components/ui';
 import { ApiError } from '@/lib/api';
 import {
@@ -14,7 +13,6 @@ import { useEffect, useState } from 'react';
 
 export function AdminDashboard() {
   const totalRevenue = reports.reduce((s, r) => s + r.revenue, 0);
-  const activeUsers = platformUsers.filter(u => u.status === 'active').length;
   const openComplaints = complaints.filter(c => c.status === 'open').length;
 
   return (

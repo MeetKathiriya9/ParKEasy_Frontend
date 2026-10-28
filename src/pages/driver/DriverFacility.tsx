@@ -1,11 +1,12 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useApp } from '@/context/AppContext';
-import { Badge, Modal, ProgressBar } from '@/components/ui';
+import { Badge, ProgressBar } from '@/components/ui';
 import { StarRating } from '@/components/StarRating';
 import { formatFreshness, formatMoney, formatRate } from '@/lib/format';
 import { fetchParkingAvailability, fetchParkingFacility, fetchParkingSpaces, parkingErrorMessage } from '@/lib/parking';
 import { SPACE_STATUS_LABELS } from '@/lib/spaces';
 import type { Amenity, ParkingAvailability, ParkingSearchResult, Space } from '@/types';
+import { ReserveModal } from './ReserveModal';
 import {
   Accessibility, AlertCircle, ArrowLeft, Calendar, CheckCircle2, Clock, Loader2, MapPin, Navigation, Zap,
 } from 'lucide-react';
@@ -23,8 +24,9 @@ import {
  * rather than faked; and the availability "prediction" was a hard-coded
  * number, which is worse than no number at all.
  *
- * Reserving is the third. The reservations module is not switched on yet, so
- * the button says so rather than pretending to take money.
+ * Reserving is the third. The dialog checks the server's whole-window
+ * availability and books through `/reservations`; the amount it shows is a
+ * base-rate estimate because payments are a later module.
  */
 
 const AMENITY_LABELS: Record<Amenity, string> = {
@@ -366,29 +368,16 @@ export function DriverFacility() {
         </div>
       </div>
 
-      {/* Reservations are not switched on yet, so the dialog says so. */}
-      <Modal open={showReserve} onClose={() => setShowReserve(false)} title="Reserve a Space">
-        <div className="space-y-4">
-          <div className="rounded-lg border border-[#f59e0b]/40 bg-[#f59e0b]/10 p-4 flex items-start gap-3">
-            <AlertCircle size={18} className="text-[#f59e0b] flex-shrink-0 mt-0.5" />
-            <p className="text-sm text-[#fcd34d]">
-              Reserving a space is not switched on yet. The reservation module is still being
-              built, so nothing can be booked from this page and no payment is taken.
-            </p>
-          </div>
-          <p className="text-sm text-[#8a98b5]">
-            You can still check the live availability above, and use Navigate to get directions to
-            {` ${facility.name}`}.
-          </p>
-          <button
-            type="button"
-            onClick={() => setShowReserve(false)}
-            className="pe-btn-outline w-full"
-          >
-            Close
-          </button>
-        </div>
-      </Modal>
+      {showReserve && (
+        <ReserveModal
+          open={showReserve}
+          facility={facility}
+          onClose={() => setShowReserve(false)}
+          onBooked={() => void load()}
+          onViewReservations={() => navigate('driver-reservations')}
+          onManageVehicles={() => navigate('driver-vehicles')}
+        />
+      )}
     </div>
   );
 }

@@ -37,6 +37,7 @@ export type Page =
   | 'driver-complaints'
   // staff
   | 'staff-dashboard'
+  | 'staff-reservations'
   | 'staff-scanner'
   | 'staff-sessions'
   | 'staff-violations'
@@ -82,6 +83,7 @@ function toUser(profile: AuthUser): User {
     // API is same-origin (Vite proxy) or on another host.
     photoUrl: profile.photoUrl ? apiUrl(profile.photoUrl) : null,
     facilityIds: profile.facilityIds ?? [],
+    operatorId: profile.operatorId ?? null,
   };
 }
 

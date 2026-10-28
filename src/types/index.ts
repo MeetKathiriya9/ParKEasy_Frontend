@@ -15,6 +15,8 @@ export interface User {
    * every facility); staff and operators read this to know what is theirs.
    */
   facilityIds?: string[];
+  /** Only set for `staff`: the operator account that owns the member. */
+  operatorId?: string | null;
 }
 
 /** DOC section 18 vehicle body styles. Stored lowercase on the wire. */
@@ -395,6 +397,113 @@ export interface ParkingSession {
   evCost?: number;
 }
 
+/**
+ * Live reservation wire types (`app/api/v1/reservations.py`).
+ *
+ * These are deliberately separate from the older mock `Reservation` above:
+ * the server speaks uppercase DOC section 17 states and carries the booking
+ * reference, QR token and base-rate estimate. Keeping both names lets the
+ * unimplemented admin/operator mock screens keep compiling while the driver
+ * and staff screens move to the real API.
+ */
+export type ReservationStatusWire =
+  | 'PENDING'
+  | 'CONFIRMED'
+  | 'ARRIVED'
+  | 'ACTIVE'
+  | 'COMPLETED'
+  | 'CANCELLED'
+  | 'EXPIRED'
+  | 'NO_SHOW';
+
+export interface ReservationRecord {
+  id: string;
+  reference: string;
+  qrCode: string;
+  userId: string;
+  vehicleId: string;
+  vehiclePlate: string;
+  facilityId: string;
+  facilityName: string;
+  operatorId?: string | null;
+  spaceId: string;
+  spaceNumber: string;
+  startTime: string;
+  endTime: string;
+  durationMinutes: number;
+  status: ReservationStatusWire;
+  estimatedAmount?: number | null;
+  checkedInAt?: string | null;
+  checkedOutAt?: string | null;
+  cancelledAt?: string | null;
+  cancelReason?: string | null;
+  sessionId?: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type SessionStatusWire = 'ACTIVE' | 'EXTENDED' | 'COMPLETED' | 'ABORTED';
+
+export interface SessionRecord {
+  id: string;
+  reservationId: string;
+  reference: string;
+  userId: string;
+  vehicleId: string;
+  vehiclePlate: string;
+  facilityId: string;
+  facilityName: string;
+  operatorId?: string | null;
+  spaceId: string;
+  spaceNumber: string;
+  entryTime: string;
+  exitTime?: string | null;
+  status: SessionStatusWire;
+  durationMinutes: number;
+  amount?: number | null;
+  amountEstimated: boolean;
+  overstayMinutes: number;
+  closedById?: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ReservationAvailability {
+  facilityId: string;
+  startTime: string;
+  endTime: string;
+  totalReservable: number;
+  availableSpaces: number;
+  availabilityAsOf: string;
+}
+
+export interface CheckInResult {
+  reservation: ReservationRecord;
+  session: SessionRecord;
+}
+
+export interface ReservationListParams {
+  status?: ReservationStatusWire;
+  facilityId?: string;
+  from?: string;
+  to?: string;
+  q?: string;
+  order?: 'asc' | 'desc';
+  page?: number;
+  limit?: number;
+}
+
+export interface SessionListParams {
+  status?: SessionStatusWire;
+  facilityId?: string;
+  from?: string;
+  to?: string;
+  q?: string;
+  order?: 'asc' | 'desc';
+  page?: number;
+  limit?: number;
+}
+
 export type ViolationType =
   | 'overstay'
   | 'wrong_zone'
@@ -418,18 +527,92 @@ export interface Violation {
   evidence: string;
 }
 
-export interface StaffMember {
+/** Account states a staff member can be in. `PENDING` is not reachable here. */
+export type StaffStatus = 'ACTIVE' | 'SUSPENDED' | 'PENDING';
+
+/** One assignment period. Ended periods stay in the history as `INACTIVE`. */
+export type AssignmentStatus = 'ACTIVE' | 'INACTIVE';
+
+/** The bit of a facility a staff card needs without a second request. */
+export interface StaffFacilityRef {
+  id: string;
+  name: string;
+  status: string;
+}
+
+export interface StaffAssignment {
+  id: string;
+  staffId: string;
+  facilityId: string;
+  facilityName?: string | null;
+  facilityStatus?: string | null;
+  operatorId?: string | null;
+  status: AssignmentStatus;
+  assignedById?: string | null;
+  assignedByName?: string | null;
+  assignedAt: string;
+  deactivatedById?: string | null;
+  deactivatedByName?: string | null;
+  deactivatedAt?: string | null;
+  reason?: string | null;
+}
+
+/** `GET /staff` row. `facilityIds` is derived from the active assignments. */
+export interface StaffSummary {
   id: string;
   name: string;
   email: string;
-  phone: string;
+  phone?: string | null;
+  status: StaffStatus;
+  operatorId?: string | null;
+  operatorName?: string | null;
+  facilityIds: string[];
+  facilities: StaffFacilityRef[];
+  createdAt?: string | null;
+  updatedAt?: string | null;
+  lastLoginAt?: string | null;
+}
+
+/** `GET /staff/{id}` - the summary plus the full assignment history. */
+export interface StaffDetail extends StaffSummary {
+  assignments: StaffAssignment[];
+}
+
+/** Body of `POST /staff`. `operatorId` is admin-only. */
+export interface StaffCreateInput {
+  name: string;
+  email: string;
+  phone?: string;
+  password: string;
+  facilityIds?: string[];
+  operatorId?: string;
+}
+
+/** Body of `PATCH /staff/{id}`: send only what changed. */
+export interface StaffUpdateInput {
+  name?: string;
+  phone?: string;
+  /** Admin-only, and only to adopt an account that has no owner yet. */
+  operatorId?: string;
+}
+
+/** Body of `PATCH /staff/{id}/status`. */
+export interface StaffStatusInput {
+  status: 'ACTIVE' | 'SUSPENDED';
+  reason?: string;
+}
+
+/** Body of `POST /staff/{id}/assignments`. */
+export interface StaffAssignmentInput {
   facilityId: string;
-  facilityName: string;
-  role: string;
-  active: boolean;
-  scansToday: number;
-  violationsLogged: number;
-  lastActive: string;
+  note?: string;
+}
+
+/** Query for `GET /staff`. */
+export interface StaffListParams {
+  facilityId?: string;
+  status?: StaffStatus;
+  q?: string;
 }
 
 export interface Review {
