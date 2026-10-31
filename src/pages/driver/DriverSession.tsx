@@ -1,17 +1,24 @@
 /**
  * The driver's current parking session, read from `/sessions/active`.
  *
- * A session starts at staff check-in and ends at staff check-out, so this page
- * is read-only: it shows the space, entry time, elapsed stay and the base-rate
- * estimate the server will settle on. It refreshes itself so a check-in at the
- * barrier appears without a reload.
+ * A session starts at staff check-in and ends at staff check-out. Drivers can
+ * extend an active stay, but only staff close it. The page shows the space,
+ * entry time, elapsed stay, scheduled end and the live pricing estimate, and
+ * refreshes itself so a check-in at the barrier appears without a reload.
  */
 
 import { useCallback, useEffect, useState } from 'react';
 import { useApp } from '@/context/AppContext';
 import { Badge, SectionHeader } from '@/components/ui';
 import { formatDateTime, formatDuration, formatMoney } from '@/lib/format';
-import { SESSION_STATUS_COLORS, SESSION_STATUS_LABELS, fetchActiveSession, fetchReservations, reservationErrorMessage } from '@/lib/reservations';
+import {
+  SESSION_STATUS_COLORS,
+  SESSION_STATUS_LABELS,
+  extendSession,
+  fetchActiveSession,
+  fetchReservations,
+  reservationErrorMessage,
+} from '@/lib/reservations';
 import type { ReservationRecord, SessionRecord } from '@/types';
 import {
   AlertCircle, CalendarClock, Car, Clock, Loader2, MapPin, RefreshCw, Timer,
@@ -30,6 +37,10 @@ export function DriverSession() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [now, setNow] = useState(Date.now());
+  const [extensionMinutes, setExtensionMinutes] = useState(30);
+  const [extending, setExtending] = useState(false);
+  const [extensionError, setExtensionError] = useState('');
+  const [extensionNotice, setExtensionNotice] = useState('');
 
   const load = useCallback(async () => {
     setError('');
@@ -57,6 +68,27 @@ export function DriverSession() {
     }, 30_000);
     return () => window.clearInterval(refresh);
   }, [load]);
+
+  const handleExtend = async () => {
+    if (!session || extending) return;
+    setExtending(true);
+    setExtensionError('');
+    setExtensionNotice('');
+    try {
+      const result = await extendSession(session.id, extensionMinutes);
+      setSession(result.session);
+      setNow(Date.now());
+      setExtensionNotice(
+        `Extended by ${formatDuration(extensionMinutes)}. New end ${formatDateTime(
+          result.session.scheduledEndTime ?? result.reservation.endTime,
+        )}.`,
+      );
+    } catch (err) {
+      setExtensionError(reservationErrorMessage(err));
+    } finally {
+      setExtending(false);
+    }
+  };
 
   const elapsed = session ? Math.max(elapsedMinutes(session.entryTime), Math.floor((now - Date.parse(session.entryTime)) / 60_000)) : 0;
 
@@ -105,10 +137,20 @@ export function DriverSession() {
                   <p className="text-2xl font-bold text-[#3b82f6] mt-1">{formatDuration(elapsed)}</p>
                 </div>
                 <div className="bg-[#0b1220] rounded-lg p-4">
-                  <p className="text-xs text-[#8a98b5]">Estimated amount</p>
+                  <p className="text-xs text-[#8a98b5]">
+                    {session.amountEstimated ? 'Estimated amount' : 'Final amount'}
+                  </p>
                   <p className="text-2xl font-bold mt-1">
-                    {formatMoney(session.amount, 2)}
-                    <span className="block text-[10px] font-normal text-[#5a6a8a] mt-0.5">base-rate estimate</span>
+                    {formatMoney(
+                      session.pricingBreakdown?.total ??
+                        session.estimatedBreakdown?.total ??
+                        session.amount ??
+                        0,
+                      2,
+                    )}
+                    <span className="block text-[10px] font-normal text-[#5a6a8a] mt-0.5">
+                      {session.amountEstimated ? 'estimate for this stay' : 'final charge'}
+                    </span>
                   </p>
                 </div>
               </div>
@@ -123,17 +165,54 @@ export function DriverSession() {
                 <Row label="Reference" value={session.reference} mono />
                 <Row label="Vehicle" value={session.vehiclePlate} />
                 <Row label="Entry" value={formatDateTime(session.entryTime)} />
+                {session.scheduledEndTime && (
+                  <Row label="Booked until" value={formatDateTime(session.scheduledEndTime)} />
+                )}
                 <Row label="Booking" value={session.reservationId} mono />
               </div>
             </div>
 
             <div className="pe-card p-5">
               <h3 className="font-semibold mb-2 flex items-center gap-2">
-                <Clock size={16} className="text-[#3b82f6]" /> Leaving
+                <Clock size={16} className="text-[#3b82f6]" /> Extend your stay
               </h3>
-              <p className="text-sm text-[#8a98b5]">
-                Staff close the session at the exit barrier. The final duration and amount are
-                settled then; payment is handled separately.
+              <p className="text-sm text-[#8a98b5] mb-3">
+                Need more time? Extend before staff close the session at the exit barrier.
+              </p>
+              <div className="flex gap-2">
+                <select
+                  value={extensionMinutes}
+                  onChange={(event) => setExtensionMinutes(Number(event.target.value))}
+                  className="pe-input"
+                  aria-label="Extension length"
+                >
+                  {[30, 60, 90, 120, 180, 240].map((minutes) => (
+                    <option key={minutes} value={minutes}>
+                      {formatDuration(minutes)}
+                    </option>
+                  ))}
+                </select>
+                <button
+                  type="button"
+                  onClick={() => void handleExtend()}
+                  disabled={extending}
+                  className="pe-btn-primary whitespace-nowrap disabled:opacity-60"
+                >
+                  {extending ? <Loader2 size={15} className="animate-spin" /> : <Timer size={15} />}
+                  Extend
+                </button>
+              </div>
+              {extensionNotice && (
+                <p className="mt-3 text-sm text-[#10b981]">{extensionNotice}</p>
+              )}
+              {extensionError && (
+                <p role="alert" className="mt-3 text-sm text-[#fca5a5]">
+                  {extensionError}
+                </p>
+              )}
+              <p className="mt-3 text-xs text-[#5a6a8a]">
+                The final amount is settled when staff close the session. Payment is handled
+                separately.
               </p>
             </div>
           </div>

@@ -13,6 +13,7 @@ import {
   SESSION_STATUS_COLORS,
   SESSION_STATUS_LABELS,
   closeSession,
+  extendSession,
   fetchSessions,
   reservationErrorMessage,
 } from '@/lib/reservations';
@@ -26,12 +27,20 @@ export function StaffSessions() {
   const [notice, setNotice] = useState('');
   const [busyId, setBusyId] = useState<string | null>(null);
   const [confirmId, setConfirmId] = useState<string | null>(null);
+  const [extensionMinutes, setExtensionMinutes] = useState<Record<string, number>>({});
 
   const load = useCallback(async () => {
     setError('');
     try {
-      const page = await fetchSessions({ status: 'ACTIVE', limit: 100, order: 'desc' });
-      setSessions(page.items);
+      const [active, extended] = await Promise.all([
+        fetchSessions({ status: 'ACTIVE', limit: 100, order: 'desc' }),
+        fetchSessions({ status: 'EXTENDED', limit: 100, order: 'desc' }),
+      ]);
+      setSessions(
+        [...active.items, ...extended.items].sort(
+          (a, b) => Date.parse(b.entryTime) - Date.parse(a.entryTime),
+        ),
+      );
     } catch (err) {
       setError(reservationErrorMessage(err));
     } finally {
@@ -54,9 +63,30 @@ export function StaffSessions() {
       setSessions((rows) => rows.filter((row) => row.id !== closed.id));
       setNotice(
         `${closed.vehiclePlate} checked out after ${formatDuration(closed.durationMinutes)}. ` +
-          `Estimated amount ${formatMoney(closed.amount, 2)}.`,
+          `Final amount ${formatMoney(closed.pricingBreakdown?.total ?? closed.amount ?? 0, 2)}.`,
       );
       setConfirmId(null);
+    } catch (err) {
+      setError(reservationErrorMessage(err));
+    } finally {
+      setBusyId(null);
+    }
+  };
+
+  const handleExtend = async (session: SessionRecord) => {
+    const minutes = extensionMinutes[session.id] ?? 30;
+    setBusyId(session.id);
+    setError('');
+    setNotice('');
+    try {
+      const result = await extendSession(session.id, minutes);
+      setSessions((rows) =>
+        rows.map((row) => (row.id === session.id ? result.session : row)),
+      );
+      setNotice(
+        `${result.session.vehiclePlate} extended by ${formatDuration(minutes)}. ` +
+          `New end ${formatDateTime(result.session.scheduledEndTime ?? result.reservation.endTime)}.`,
+      );
     } catch (err) {
       setError(reservationErrorMessage(err));
     } finally {
@@ -124,10 +154,18 @@ export function StaffSessions() {
                 <span>Space {session.spaceNumber}</span>
               </div>
 
-              <div className="flex items-center justify-between gap-3">
+              <div className="flex flex-wrap items-center justify-between gap-3">
                 <p className="text-sm">
                   <span className="text-[#8a98b5]">Estimate: </span>
-                  {formatMoney(session.amount, 2)}
+                  {formatMoney(
+                    session.estimatedBreakdown?.total ?? session.amount ?? 0,
+                    2,
+                  )}
+                  {session.scheduledEndTime && (
+                    <span className="text-[#8a98b5] ml-2">
+                      until {formatDateTime(session.scheduledEndTime)}
+                    </span>
+                  )}
                   {session.overstayMinutes > 0 && (
                     <span className="text-[#f59e0b] ml-2">
                       overstay {formatDuration(session.overstayMinutes)}
@@ -154,6 +192,41 @@ export function StaffSessions() {
                     <LogOut size={14} />
                   )}
                   {confirmId === session.id ? 'Confirm checkout' : 'Check out'}
+                </button>
+              </div>
+
+              <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-[#1e2d4d] pt-3">
+                <span className="text-xs text-[#5a6a8a]">Extend</span>
+                <select
+                  value={extensionMinutes[session.id] ?? 30}
+                  onChange={(event) =>
+                    setExtensionMinutes((current) => ({
+                      ...current,
+                      [session.id]: Number(event.target.value),
+                    }))
+                  }
+                  disabled={busyId === session.id}
+                  className="pe-input text-sm max-w-[8rem]"
+                  aria-label={`Extension for ${session.vehiclePlate}`}
+                >
+                  {[30, 60, 90, 120, 180, 240].map((minutes) => (
+                    <option key={minutes} value={minutes}>
+                      {formatDuration(minutes)}
+                    </option>
+                  ))}
+                </select>
+                <button
+                  type="button"
+                  onClick={() => void handleExtend(session)}
+                  disabled={busyId === session.id}
+                  className="pe-btn-outline text-sm"
+                >
+                  {busyId === session.id ? (
+                    <Loader2 size={14} className="animate-spin" />
+                  ) : (
+                    <Timer size={14} />
+                  )}
+                  Add time
                 </button>
               </div>
             </div>

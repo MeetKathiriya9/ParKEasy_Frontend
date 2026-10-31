@@ -10,7 +10,7 @@
  */
 
 /** The currency symbol used for every rate in the app. */
-export const CURRENCY = '$';
+export const CURRENCY = '₹';
 
 /**
  * A money amount, e.g. `30` -> `$30` and `12.5` -> `$12.50`.
@@ -20,7 +20,10 @@ export const CURRENCY = '$';
  */
 export function formatMoney(amount: number | null | undefined, decimals = 0): string {
   if (amount === null || amount === undefined || !Number.isFinite(amount)) return '-';
-  return `${CURRENCY}${amount.toFixed(decimals)}`;
+  return `${CURRENCY}${amount.toLocaleString('en-IN', {
+    minimumFractionDigits: decimals,
+    maximumFractionDigits: decimals,
+  })}`;
 }
 
 /**

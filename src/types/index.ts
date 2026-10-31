@@ -93,6 +93,9 @@ export interface Facility {
   isOpenNow: boolean;
   hourlyRate?: number | null;
   dailyMax?: number | null;
+  graceMinutes: number;
+  overstayGraceMinutes: number;
+  overstayRate?: number | null;
   /**
    * Standing on the five-point scale, or null when the facility has not been
    * rated yet. Written by an operator until the reviews group exists.
@@ -119,6 +122,9 @@ export interface FacilityCreateInput {
   description?: string;
   hourlyRate?: number;
   dailyMax?: number;
+  graceMinutes?: number;
+  overstayGraceMinutes?: number;
+  overstayRate?: number;
   /** 0-5; leave it out and the server stores no rating. */
   rating?: number;
   reviewCount?: number;
@@ -138,6 +144,9 @@ export interface FacilityUpdateInput {
   amenities?: Amenity[];
   hourlyRate?: number | null;
   dailyMax?: number | null;
+  graceMinutes?: number;
+  overstayGraceMinutes?: number;
+  overstayRate?: number | null;
   rating?: number | null;
   reviewCount?: number | null;
 }
@@ -416,6 +425,72 @@ export type ReservationStatusWire =
   | 'EXPIRED'
   | 'NO_SHOW';
 
+export interface PriceLine {
+  kind: string;
+  label: string;
+  minutes?: number | null;
+  rate?: number | null;
+  amount: number;
+  ruleId?: string | null;
+}
+
+export interface PricingBreakdown {
+  currency: string;
+  billableMinutes: number;
+  baseMinutes: number;
+  overtimeMinutes: number;
+  lines: PriceLine[];
+  subtotal: number;
+  taxAmount: number;
+  feeAmount: number;
+  total: number;
+  ruleIds: string[];
+  estimated: boolean;
+  computedAt: string;
+}
+
+export type PricingRuleKind = 'hourly' | 'fixed' | 'daily';
+
+export interface PricingRuleRecord {
+  id: string;
+  facilityId: string;
+  operatorId: string;
+  name: string;
+  ruleType: PricingRuleKind;
+  rate: number;
+  durationMinutes?: number | null;
+  priority: number;
+  active: boolean;
+  createdAt?: string | null;
+  updatedAt?: string | null;
+}
+
+export interface PricingRuleCreateInput {
+  facilityId: string;
+  name: string;
+  ruleType: PricingRuleKind;
+  rate: number;
+  durationMinutes?: number;
+  priority?: number;
+  active?: boolean;
+}
+
+export interface PricingRuleUpdateInput {
+  name?: string;
+  ruleType?: PricingRuleKind;
+  rate?: number;
+  durationMinutes?: number | null;
+  priority?: number;
+  active?: boolean;
+}
+
+export interface PricingPreviewInput {
+  facilityId: string;
+  entryTime: string;
+  exitTime: string;
+  bookedEndTime?: string;
+}
+
 export interface ReservationRecord {
   id: string;
   reference: string;
@@ -433,6 +508,7 @@ export interface ReservationRecord {
   durationMinutes: number;
   status: ReservationStatusWire;
   estimatedAmount?: number | null;
+  estimatedBreakdown?: PricingBreakdown | null;
   checkedInAt?: string | null;
   checkedOutAt?: string | null;
   cancelledAt?: string | null;
@@ -458,10 +534,14 @@ export interface SessionRecord {
   spaceNumber: string;
   entryTime: string;
   exitTime?: string | null;
+  scheduledEndTime?: string | null;
   status: SessionStatusWire;
   durationMinutes: number;
   amount?: number | null;
   amountEstimated: boolean;
+  estimatedAmount?: number | null;
+  estimatedBreakdown?: PricingBreakdown | null;
+  pricingBreakdown?: PricingBreakdown | null;
   overstayMinutes: number;
   closedById?: string | null;
   createdAt: string;

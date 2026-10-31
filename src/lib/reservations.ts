@@ -182,6 +182,14 @@ export async function fetchSession(id: string): Promise<SessionRecord> {
   return get<SessionRecord>(endpoints.sessions.detail(id));
 }
 
+/** `PATCH /sessions/{id}/extend` - add time to an active session. */
+export async function extendSession(
+  id: string,
+  additionalMinutes: number,
+): Promise<CheckInResult> {
+  return patch<CheckInResult>(endpoints.sessions.extend(id), { additionalMinutes });
+}
+
 /** `POST /sessions/{id}/close` - staff closes an active session. */
 export async function closeSession(id: string): Promise<SessionRecord> {
   return post<SessionRecord>(endpoints.sessions.close(id));
@@ -213,6 +221,10 @@ export function reservationErrorMessage(err: unknown): string {
         return 'This parking session is already closed.';
       case 'SESSION_NOT_ACTIVE':
         return 'This parking session is not active.';
+      case 'SESSION_EXTENSION_CONFLICT':
+        return 'The space is already booked for that extension. Choose a shorter extension.';
+      case 'SESSION_EXTENSION_TOO_LONG':
+        return 'That extension is too long for this booking.';
       case 'SPACE_IN_USE':
         return 'This space is in use. Close the parking session first.';
       case 'RATE_LIMITED':

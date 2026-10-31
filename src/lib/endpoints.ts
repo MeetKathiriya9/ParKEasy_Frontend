@@ -121,6 +121,7 @@ export const endpoints = {
     rules: `${API_PREFIX}/pricing/rules`,
     createRule: `${API_PREFIX}/pricing/rules`,
     updateRule: (id: string) => `${API_PREFIX}/pricing/rules/${id}`,
+    deleteRule: (id: string) => `${API_PREFIX}/pricing/rules/${id}`,
     preview: `${API_PREFIX}/pricing/preview`,
   },
 

@@ -144,7 +144,10 @@ export function StaffScanner() {
       setSession(result.session);
       setNotice(
         `Checked out after ${formatDuration(result.session.durationMinutes)}. ` +
-          `Estimated amount ${formatMoney(result.session.amount, 2)}.`,
+          `Final amount ${formatMoney(
+            result.session.pricingBreakdown?.total ?? result.session.amount ?? 0,
+            2,
+          )}.`,
       );
     } catch (err) {
       setError(reservationErrorMessage(err));
@@ -279,7 +282,13 @@ export function StaffScanner() {
                 <Row label="Start" value={formatDateTime(reservation.startTime)} />
                 <Row label="End" value={formatDateTime(reservation.endTime)} />
                 <Row label="Duration" value={formatDuration(reservation.durationMinutes)} />
-                <Row label="Estimated amount" value={`${formatMoney(reservation.estimatedAmount, 2)} (estimate)`} />
+                <Row
+                  label="Estimated amount"
+                  value={`${formatMoney(
+                    reservation.estimatedBreakdown?.total ?? reservation.estimatedAmount ?? 0,
+                    2,
+                  )} (estimate)`}
+                />
                 {reservation.checkedInAt && <Row label="Checked in" value={formatDateTime(reservation.checkedInAt)} />}
               </div>
 
@@ -287,8 +296,20 @@ export function StaffScanner() {
                 <div className="rounded-lg border border-[#10b981]/40 bg-[#10b981]/10 p-4 text-sm">
                   <p className="font-semibold text-[#6ee7b7] mb-2">Session</p>
                   <Row label="Entry" value={formatDateTime(session.entryTime)} />
+                  {session.scheduledEndTime && (
+                    <Row label="Booked until" value={formatDateTime(session.scheduledEndTime)} />
+                  )}
                   <Row label="Duration" value={formatDuration(session.durationMinutes)} />
-                  <Row label="Amount" value={`${formatMoney(session.amount, 2)} (estimate)`} />
+                  <Row
+                    label={session.amountEstimated ? 'Estimated amount' : 'Final amount'}
+                    value={`${formatMoney(
+                      session.pricingBreakdown?.total ??
+                        session.estimatedBreakdown?.total ??
+                        session.amount ??
+                        0,
+                      2,
+                    )} ${session.amountEstimated ? '(estimate)' : '(final)'}`}
+                  />
                   {session.overstayMinutes > 0 && (
                     <p className="text-[#fcd34d] mt-2">Overstay: {formatDuration(session.overstayMinutes)}</p>
                   )}

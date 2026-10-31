@@ -11,6 +11,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { QRCodeSVG } from 'qrcode.react';
 import { Modal } from '@/components/ui';
 import { formatDateTime, formatDuration, formatMoney } from '@/lib/format';
+import { previewPrice, pricingErrorMessage } from '@/lib/pricing';
 import {
   RESERVATION_DURATIONS,
   RESERVATION_SLOT_MINUTES,
@@ -21,6 +22,7 @@ import {
 import { fetchVehicles } from '@/lib/vehicles';
 import type {
   ParkingSearchResult,
+  PricingBreakdown,
   ReservationAvailability,
   ReservationRecord,
   Vehicle,
@@ -82,6 +84,9 @@ export function ReserveModal({
   const [availability, setAvailability] = useState<ReservationAvailability | null>(null);
   const [checking, setChecking] = useState(false);
   const [availabilityError, setAvailabilityError] = useState('');
+  const [price, setPrice] = useState<PricingBreakdown | null>(null);
+  const [priceLoading, setPriceLoading] = useState(false);
+  const [priceError, setPriceError] = useState('');
   const [booking, setBooking] = useState(false);
   const [formError, setFormError] = useState('');
   const [created, setCreated] = useState<ReservationRecord | null>(null);
@@ -138,6 +143,38 @@ export function ReserveModal({
       })
       .finally(() => {
         if (!cancelled) setChecking(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [facility.id, start, end, startValid]);
+
+  useEffect(() => {
+    if (!startValid) {
+      setPrice(null);
+      setPriceError('');
+      return;
+    }
+    let cancelled = false;
+    setPriceLoading(true);
+    setPriceError('');
+    previewPrice({
+      facilityId: facility.id,
+      entryTime: start.toISOString(),
+      exitTime: end.toISOString(),
+      bookedEndTime: end.toISOString(),
+    })
+      .then((row) => {
+        if (!cancelled) setPrice(row);
+      })
+      .catch((err) => {
+        if (!cancelled) {
+          setPrice(null);
+          setPriceError(pricingErrorMessage(err));
+        }
+      })
+      .finally(() => {
+        if (!cancelled) setPriceLoading(false);
       });
     return () => {
       cancelled = true;
@@ -206,7 +243,8 @@ export function ReserveModal({
             <div className="flex justify-between gap-3">
               <span className="text-[#8a98b5]">Estimated amount</span>
               <span className="font-semibold">
-                {formatMoney(created.estimatedAmount, 2)} <span className="text-xs text-[#5a6a8a]">estimate</span>
+                {formatMoney(created.estimatedBreakdown?.total ?? created.estimatedAmount, 2)}{' '}
+                <span className="text-xs text-[#5a6a8a]">estimate</span>
               </span>
             </div>
           </div>
@@ -354,6 +392,31 @@ export function ReserveModal({
           )}
         </div>
 
+        <div className="rounded-lg border border-[#1e2d4d] bg-[#0b1220] px-3 py-2 text-sm">
+          <div className="flex items-center justify-between gap-3">
+            <span className="text-[#8a98b5]">Estimated amount</span>
+            {priceLoading ? (
+              <Loader2 size={16} className="animate-spin text-[#8a98b5]" />
+            ) : price ? (
+              <span className="font-semibold">
+                {formatMoney(price.total, 2)}{' '}
+                <span className="text-xs text-[#5a6a8a]">estimate</span>
+              </span>
+            ) : (
+              <span className="text-[#5a6a8a]">Not published</span>
+            )}
+          </div>
+          {price && price.overtimeMinutes > 0 && (
+            <p className="mt-1 text-xs text-[#f59e0b]">
+              Includes {price.overtimeMinutes} min beyond the booked window.
+            </p>
+          )}
+        </div>
+
+        {priceError && (
+          <p className="text-xs text-[#5a6a8a]">{priceError} You can still book.</p>
+        )}
+
         {availabilityError && (
           <div className="rounded-lg border border-[#f59e0b]/40 bg-[#f59e0b]/10 px-3 py-2 text-sm text-[#fcd34d]">
             {availabilityError}
@@ -368,7 +431,7 @@ export function ReserveModal({
 
         <p className="text-xs text-[#5a6a8a] flex items-start gap-1.5">
           <QrCode size={13} className="mt-0.5 flex-shrink-0" />
-          The amount shown after booking is a base-rate estimate. Payment is handled separately.
+          The amount shown is an estimate for the booked window. Payment is handled separately.
         </p>
 
         <button

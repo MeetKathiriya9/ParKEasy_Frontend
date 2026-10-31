@@ -40,6 +40,9 @@ interface FormState {
   amenities: Amenity[];
   hourlyRate: string;
   dailyMax: string;
+  graceMinutes: string;
+  overstayGraceMinutes: string;
+  overstayRate: string;
   rating: string;
   reviewCount: string;
 }
@@ -57,6 +60,9 @@ const EMPTY_FORM: FormState = {
   amenities: [],
   hourlyRate: '',
   dailyMax: '',
+  graceMinutes: '0',
+  overstayGraceMinutes: '15',
+  overstayRate: '',
   rating: '',
   reviewCount: '',
 };
@@ -184,6 +190,12 @@ export function OperatorFacilities() {
         facility.dailyMax === null || facility.dailyMax === undefined
           ? ''
           : String(facility.dailyMax),
+      graceMinutes: String(facility.graceMinutes ?? 0),
+      overstayGraceMinutes: String(facility.overstayGraceMinutes ?? 15),
+      overstayRate:
+        facility.overstayRate === null || facility.overstayRate === undefined
+          ? ''
+          : String(facility.overstayRate),
       rating: facility.rating === null || facility.rating === undefined ? '' : String(facility.rating),
       reviewCount:
         facility.reviewCount === null || facility.reviewCount === undefined
@@ -273,6 +285,21 @@ export function OperatorFacilities() {
     }
     if (!rateIsValid(form.hourlyRate) || !rateIsValid(form.dailyMax)) {
       return { values: null, error: 'Rates must be numbers greater than 0 and at most 10000.' };
+    }
+    const grace = Number(form.graceMinutes);
+    const overstayGrace = Number(form.overstayGraceMinutes);
+    if (
+      !Number.isInteger(grace) ||
+      grace < 0 ||
+      grace > 120 ||
+      !Number.isInteger(overstayGrace) ||
+      overstayGrace < 0 ||
+      overstayGrace > 120
+    ) {
+      return { values: null, error: 'Grace minutes must be whole numbers between 0 and 120.' };
+    }
+    if (!rateIsValid(form.overstayRate)) {
+      return { values: null, error: 'Overstay rate must be greater than 0 and at most 10000.' };
     }
     if (!ratingIsValid(form.rating)) {
       return { values: null, error: 'Rating must be a number between 0 and 5.' };
@@ -475,6 +502,12 @@ export function OperatorFacilities() {
                     <p className="font-semibold">{formatMoney(f.dailyMax)}</p>
                   </div>
                 )}
+                <div>
+                  <p className="text-xs text-[#8a98b5] mb-0.5">Grace</p>
+                  <p className="font-semibold">
+                    {f.graceMinutes} min / overstay {f.overstayGraceMinutes} min
+                  </p>
+                </div>
                 {(f.rating !== null && f.rating !== undefined) && (
                   <div>
                     <p className="text-xs text-[#8a98b5] mb-0.5">Rating</p>
@@ -675,6 +708,70 @@ export function OperatorFacilities() {
               />
             </div>
           </div>
+
+          <div className="grid grid-cols-3 gap-3">
+            <div>
+              <label
+                htmlFor="facility-grace"
+                className="text-xs text-[#8a98b5] font-medium mb-1.5 block"
+              >
+                Grace (min)
+              </label>
+              <input
+                id="facility-grace"
+                type="number"
+                step={1}
+                min={0}
+                max={120}
+                value={form.graceMinutes}
+                onChange={(e) => setForm({ ...form, graceMinutes: e.target.value })}
+                className="pe-input"
+                autoComplete="off"
+              />
+            </div>
+            <div>
+              <label
+                htmlFor="facility-overstay-grace"
+                className="text-xs text-[#8a98b5] font-medium mb-1.5 block"
+              >
+                Overstay grace (min)
+              </label>
+              <input
+                id="facility-overstay-grace"
+                type="number"
+                step={1}
+                min={0}
+                max={120}
+                value={form.overstayGraceMinutes}
+                onChange={(e) => setForm({ ...form, overstayGraceMinutes: e.target.value })}
+                className="pe-input"
+                autoComplete="off"
+              />
+            </div>
+            <div>
+              <label
+                htmlFor="facility-overstay-rate"
+                className="text-xs text-[#8a98b5] font-medium mb-1.5 block"
+              >
+                Overstay rate
+              </label>
+              <input
+                id="facility-overstay-rate"
+                type="number"
+                step="0.01"
+                min={0}
+                value={form.overstayRate}
+                onChange={(e) => setForm({ ...form, overstayRate: e.target.value })}
+                placeholder="Uses hourly"
+                className="pe-input"
+                autoComplete="off"
+              />
+            </div>
+          </div>
+          <p className="text-xs text-[#5a6a8a]">
+            Grace is free time before billing starts. Overstay grace is free time after the
+            booking ends before the overstay rate applies.
+          </p>
 
           <div className="flex items-center gap-2">
             <input
@@ -967,6 +1064,9 @@ function parseForm(
         : { openingTime: form.openingTime, closingTime: form.closingTime }),
       ...(form.hourlyRate === '' ? {} : { hourlyRate: Number(form.hourlyRate) }),
       ...(form.dailyMax === '' ? {} : { dailyMax: Number(form.dailyMax) }),
+      graceMinutes: Number(form.graceMinutes),
+      overstayGraceMinutes: Number(form.overstayGraceMinutes),
+      ...(form.overstayRate === '' ? {} : { overstayRate: Number(form.overstayRate) }),
       ...(form.rating === '' ? {} : { rating: Number(form.rating) }),
       ...(form.reviewCount === '' ? {} : { reviewCount: Number(form.reviewCount) }),
     },
@@ -978,6 +1078,9 @@ function parseForm(
       closingTime: form.open24h ? null : form.closingTime,
       hourlyRate: form.hourlyRate === '' ? null : Number(form.hourlyRate),
       dailyMax: form.dailyMax === '' ? null : Number(form.dailyMax),
+      graceMinutes: Number(form.graceMinutes),
+      overstayGraceMinutes: Number(form.overstayGraceMinutes),
+      overstayRate: form.overstayRate === '' ? null : Number(form.overstayRate),
       rating: form.rating === '' ? null : Number(form.rating),
       reviewCount: form.reviewCount === '' ? null : Number(form.reviewCount),
     },
