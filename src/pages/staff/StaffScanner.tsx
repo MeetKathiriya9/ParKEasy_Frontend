@@ -9,7 +9,9 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { Html5Qrcode } from 'html5-qrcode';
+import { useApp } from '@/context/AppContext';
 import { Badge, SectionHeader } from '@/components/ui';
+import { ApiError } from '@/lib/api';
 import { formatDateTime, formatDuration, formatMoney } from '@/lib/format';
 import {
   RESERVATION_STATUS_COLORS,
@@ -27,7 +29,30 @@ import {
 
 const READER_ID = 'parkeasy-qr-reader';
 
+function scannerErrorMessage(err: unknown): string {
+  if (err instanceof ApiError && err.status === 404) {
+    return 'No reservation matches that code in your assigned facilities. Check the code and your facility assignment.';
+  }
+  return reservationErrorMessage(err);
+}
+
+function reservationStatusHint(reservation: ReservationRecord): string | null {
+  switch (reservation.status) {
+    case 'NO_SHOW':
+      return 'This booking was marked no-show and can no longer be checked in.';
+    case 'EXPIRED':
+      return 'This booking expired before check-in.';
+    case 'CANCELLED':
+      return 'This booking was cancelled.';
+    case 'COMPLETED':
+      return 'This booking is already completed.';
+    default:
+      return null;
+  }
+}
+
 export function StaffScanner() {
+  const { currentUser } = useApp();
   const [manualCode, setManualCode] = useState('');
   const [reservation, setReservation] = useState<ReservationRecord | null>(null);
   const [session, setSession] = useState<SessionRecord | null>(null);
@@ -39,6 +64,8 @@ export function StaffScanner() {
   const [cameraError, setCameraError] = useState('');
   const scannerRef = useRef<Html5Qrcode | null>(null);
   const startingRef = useRef(false);
+  const noFacilityAssignment =
+    currentUser?.role === 'staff' && (currentUser.facilityIds?.length ?? 0) === 0;
 
   const stopScanner = useCallback(async () => {
     const scanner = scannerRef.current;
@@ -73,7 +100,7 @@ export function StaffScanner() {
       } catch (err) {
         setReservation(null);
         setSession(null);
-        setError(reservationErrorMessage(err));
+        setError(scannerErrorMessage(err));
       } finally {
         setLooking(false);
       }
@@ -166,6 +193,7 @@ export function StaffScanner() {
 
   const canCheckIn = reservation?.status === 'CONFIRMED' || reservation?.status === 'PENDING';
   const canCheckOut = reservation?.status === 'ACTIVE' || reservation?.status === 'ARRIVED';
+  const statusHint = reservation ? reservationStatusHint(reservation) : null;
 
   return (
     <div>
@@ -173,6 +201,21 @@ export function StaffScanner() {
         title="QR Scanner"
         subtitle="Scan a reservation QR code for check-in and check-out"
       />
+
+      {noFacilityAssignment && (
+        <div
+          role="alert"
+          className="mb-4 rounded-lg border border-[#f59e0b]/40 bg-[#f59e0b]/10 px-4 py-3 text-sm text-[#fcd34d] flex items-start gap-2"
+        >
+          <AlertCircle size={16} className="mt-0.5 flex-shrink-0" />
+          <div>
+            <p className="font-medium">No facility assigned</p>
+            <p className="text-xs mt-0.5">
+              Scanned bookings will not be found until an operator or admin assigns you to a facility.
+            </p>
+          </div>
+        </div>
+      )}
 
       <div className="grid lg:grid-cols-2 gap-6">
         <div className="space-y-4">
@@ -277,6 +320,7 @@ export function StaffScanner() {
               </div>
 
               <div className="rounded-lg border border-[#1e2d4d] bg-[#0b1220] p-4 space-y-2 text-sm">
+                <Row label="Reservation ID" value={reservation.id} />
                 <Row label="Vehicle" value={reservation.vehiclePlate} />
                 <Row label="Space" value={reservation.spaceNumber} />
                 <Row label="Start" value={formatDateTime(reservation.startTime)} />
@@ -295,6 +339,7 @@ export function StaffScanner() {
               {session && (
                 <div className="rounded-lg border border-[#10b981]/40 bg-[#10b981]/10 p-4 text-sm">
                   <p className="font-semibold text-[#6ee7b7] mb-2">Session</p>
+                  <Row label="Session ID" value={session.id} />
                   <Row label="Entry" value={formatDateTime(session.entryTime)} />
                   {session.scheduledEndTime && (
                     <Row label="Booked until" value={formatDateTime(session.scheduledEndTime)} />
@@ -348,6 +393,13 @@ export function StaffScanner() {
                   </span>
                 )}
               </div>
+
+              {statusHint && (
+                <p className="text-xs text-[#fcd34d] flex items-start gap-1.5">
+                  <AlertCircle size={13} className="mt-0.5 flex-shrink-0" />
+                  {statusHint}
+                </p>
+              )}
 
               {reservation.status === 'CONFIRMED' && (
                 <p className="text-xs text-[#5a6a8a]">
